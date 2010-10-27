@@ -23,6 +23,8 @@ odepack_stubs$(OBJ): odepack_stubs.c
 opk%$(OBJ): fortran/opk%.f
 	$(FORTRAN) $(FORTRAN_FLAGS) -c $<
 
+META: META.in odepack.mli
+	sed -e "s/@PACKAGE_VERSION@/$(VERSION)/" $< > $@
 
 include $(ROOT)/Makefile.ocaml
 

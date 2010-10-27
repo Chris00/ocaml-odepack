@@ -56,10 +56,31 @@ typedef void (*JACOBIAN)(integer*, doublereal*, vec,
   integer dim_##V = *big_##V->dim; \
   int *V##_data = ((int *) big_##V->data) /*+ (Long_val(vOFS##V) - 1)*/
 
+/*
+ * Declaring Fortran functions
+ **********************************************************************/
 
 SUBROUTINE(lsode)(VEC_FIELD F,
                   integer *NEQ, /*  Number of first-order ODE's. */
-                  vec Y, doublereal *T, doublereal *TOUT,
+                  vec Y,
+                  doublereal *T,
+                  doublereal *TOUT,
+                  integer *ITOL,
+                  doublereal *RTOL, /* Relative tolerance */
+                  doublereal *ATOL, /* absolute tolerance, scalar or array */
+                  integer *ITASK,   /* task to perform */
+                  integer *ISTATE,  /* specify the state of the calculation */
+                  integer *IOPT,    /* whether optional inputs are used */
+                  vec RWORK, /* of size */ integer *LRW,
+                  int_vec IWORK, /* of size */ integer *LIW,
+                  JACOBIAN JAC, /* optional subroutine for Jacobian matrix */
+                  integer *MF);
+
+SUBROUTINE(lsodes)(VEC_FIELD F,
+                  integer *NEQ, /*  Number of first-order ODE's. */
+                  vec Y,
+                  doublereal *T,
+                  doublereal *TOUT,
                   integer *ITOL,
                   doublereal *RTOL, /* Relative tolerance */
                   doublereal *ATOL, /* absolute tolerance, scalar or array */
@@ -82,11 +103,52 @@ SUBROUTINE(lsoda)(VEC_FIELD F,
                   integer *ITASK,
                   integer *ISTATE,
                   integer *IOPT,
-                  doublereal *RWORK, /* of size */ integer *LRW,
-                  integer *IWORK, /* of size */ integer *LIW,
+                  vec RWORK, /* of size */ integer *LRW,
+                  int_vec IWORK, /* of size */ integer *LIW,
                   JACOBIAN JAC,
                   integer *JT);
 
+SUBROUTINE(lsodar)(VEC_FIELD F,
+                   integer *NEQ, /* size of the ODE system */
+                   vec Y,
+                   doublereal *T,
+                   doublereal *TOUT,
+                   integer *ITOL,
+                   doublereal *RTOL,
+                   doublereal *ATOL,
+                   integer *ITASK,
+                   integer *ISTATE,
+                   integer *IOPT,
+                   vec RWORK, /* of size */ integer *LRW,
+                   int_vec IWORK, /* of size */ integer *LIW,
+                   JACOBIAN JAC,
+                   integer *JT,
+                   void (*G)(integer*, doublereal*, vec, integer*, vec),
+                   integer *NG,  /* number of functions */
+                   integer *JROOT);
+
+SUBROUTINE(lsodpk)(VEC_FIELD F,
+                   integer *NEQ, /*  Number of first-order ODE's. */
+                   vec Y,
+                   doublereal *T,
+                   doublereal *TOUT,
+                   integer *ITOL,
+                   doublereal *RTOL, /* Relative tolerance */
+                   doublereal *ATOL, /* absolute tolerance, scalar or array */
+                   integer *ITASK,   /* task to perform */
+                   integer *ISTATE,  /* specify the state of the calculation */
+                   integer *IOPT,    /* whether optional inputs are used */
+                   vec RWORK, /* of size */ integer *LRW,
+                   int_vec IWORK, /* of size */ integer *LIW,
+                   JACOBIAN JAC, /* optional subroutine for Jacobian matrix */
+                   void (*PSOL)(integer*, doublereal*, vec, vec),
+                   integer *MF);
+
+// DLSODKR, DLSODI, DLSOIBT, DLSODIS
+
+/*
+ * Bindings
+ **********************************************************************/
 
 /* Since NEQ may be an array (with NEQ(1) only used by LSODA), one
  * will use it to 1) pass to the function evaluating the Caml closure,

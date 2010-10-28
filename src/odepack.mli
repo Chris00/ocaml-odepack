@@ -22,13 +22,30 @@ open Bigarray
 type 'a vec = (float, float64_elt, 'a) Array1.t
 (** Representation of vectors (parametrized by their layout). *)
 
+type 'a mat = (float, float64_elt, 'a) Array2.t
+(** Representation of matrices (parametrized by their layout). *)
+
 type 'a int_vec = (int, int_elt, 'a) Array1.t
 (** Representation of integer vectors (parametrized by their layout). *)
 
 type 'a t
 (** A mutable value holding the current state of solving the ODE. *)
 
+(** Types of Jacobian matrices. *)
+type 'a jacobian =
+| Auto_full (** Internally generated (difference quotient) full Jacobian *)
+| Auto_band of int * int (** Internally generated (difference
+                             quotient) band Jacobian.  The arguments
+                             [(l,u)] are the *)
+| Full of float -> 'a vec -> 'a mat -> unit
+| Band of float -> 'a vec -> int -> 'a mat -> unit
+(** [Band f] [df t y d m]
+    [m <- ∂f/∂y(t, y)] where [m] is a band matrix
+    [d] being the index of the line of [m] corresponding to the diagonal
+ *)
+
 val lsoda : ?rtol:float -> ?atol:float -> ?atol_vec:'a vec ->
+  ?jac:jacobian ->
   (float -> 'a vec -> 'a vec -> unit) -> float -> 'a vec -> float -> 'a t
 (** [lsoda f t0 y0 t] solves the ODE dy/dt = F(t,y) with initial
     condition y([t0]) = [y0].  The execution of [f t y y'] must
@@ -36,13 +53,15 @@ val lsoda : ?rtol:float -> ?atol:float -> ?atol_vec:'a vec ->
     vector [y0] is MODIFIED to contain the value of the solution at
     time [t].
 
-    @param rtol
+    @param rtol relative error tolerance parameter.
 
     @param atol
 
     @param atol_vec
 
-    @param jac is an optional Jabobian matrix.  Default: [Auto_full].
+    @param jac is an optional Jabobian matrix.  If the problem is
+    expected to be stiff much of the time, you are encouraged to supply
+    [jac], for the sake of efficiency.  Default: [Auto_full].
 *)
 
 val vec : 'a t -> 'a vec

@@ -18,6 +18,7 @@
 open Bigarray
 
 type 'a vec = (float, float64_elt, 'a) Array1.t
+type 'a mat = (float, float64_elt, 'a) Array2.t
 type 'a int_vec = (int, int_elt, 'a) Array1.t
 
 external set_layout : ('a, 'b, _) Array1.t -> 'l layout -> ('a, 'b, 'l) Array1.t
@@ -30,6 +31,12 @@ external set_layout : ('a, 'b, _) Array1.t -> 'l layout -> ('a, 'b, 'l) Array1.t
 type 'a vec_field = float -> 'a vec -> 'a vec -> unit
 (* [f t y y'] where y' must be used for the storage of the fector
    field at (t,y):  y' <- f(t,y). *)
+
+type 'a jacobian =
+| Auto_full
+| Auto_band of int * int
+| Full of float -> 'a vec -> 'a mat -> unit
+| Band of float -> 'a vec -> int -> 'a mat -> unit
 
 type task = TOUT | One_step | First_msh_point | TOUT_TCRIT | One_step_TCRIT
 

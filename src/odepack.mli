@@ -35,14 +35,20 @@ type 'a t
 type 'a jacobian =
 | Auto_full (** Internally generated (difference quotient) full Jacobian *)
 | Auto_band of int * int (** Internally generated (difference
-                             quotient) band Jacobian.  The arguments
-                             [(l,u)] are the *)
-| Full of (float -> 'a vec -> 'a mat -> unit)
-| Band of (float -> 'a vec -> int -> 'a mat -> unit)
-(** [Band f] [df t y d m]
-    [m <- ∂f/∂y(t, y)] where [m] is a band matrix
-    [d] being the index of the line of [m] corresponding to the diagonal
- *)
+                             quotient) band Jacobian.  It takes
+                             [(l,u)] where [l] (resp. [u]) is the
+                             number of lines below (resp. above) the
+                             diagonal (excluded). *)
+| Full of (float -> 'a vec -> fortran_layout mat -> unit)
+(** [Full df] means that a function [df] is provided to compute the
+    full Jacobian matrix (∂f_i/∂y_j) of the vector field f(t,y).
+    [df t y jac] must store ∂f_i/∂y_j([t],[y]) into [jac.{i,j}]. *)
+| Band of int * int * (float -> 'a vec -> int -> fortran_layout mat -> unit)
+(** [Band(l, u, df)] means that a function [df] is provided to compute
+    the banded Jacobian matrix with [l] (resp. [u]) diagonals below
+    (resp. above) the main one (not counted).  [df t y d jac] must
+    store ∂f_i/∂y_j([t],[y]) into [jac.{i-j+d, j}].  [d] is the row of
+    [jac] corresponding to the main diagonal of the Jacobian matrix.  *)
 
 val lsoda : ?rtol:float -> ?rtol_vec:'a vec -> ?atol:float -> ?atol_vec:'a vec ->
   ?jac:'a jacobian ->

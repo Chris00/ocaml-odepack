@@ -40,6 +40,7 @@ ocaml_odepack_set_layout(value vb, value layout)
 #define FUN(name) ocaml_odepack_d ## name
 
 typedef doublereal* vec;
+typedef doublereal* mat; /* fortran (columnwise) layout */
 typedef integer* int_vec;
 typedef void (*VEC_FIELD)(integer*, doublereal*, vec, vec);
 typedef void (*JACOBIAN)(integer*, doublereal*, vec,
@@ -162,12 +163,30 @@ static void eval_vec_field(integer* NEQ, doublereal* T, vec Y, vec YDOT)
   CAMLparam0();
   CAMLlocal1(vT);
   value *vNEQ = (value *) NEQ;
-  value closure = vNEQ[1];
-  value vY = vNEQ[2]; /* data location is always the same */
-  value vYDOT = vNEQ[3];
+  value vf = vNEQ[1];
+  value vYDOT = vNEQ[2];
+  value vY = vNEQ[5]; /* data location is always the same */
   Caml_ba_array_val(vYDOT)->data = YDOT; /* update RWORK location */
   vT = caml_copy_double(*T);
-  caml_callback3(closure, vT, vY, vYDOT);
+  caml_callback3(vf, vT, vY, vYDOT);
+  CAMLreturn0;
+}
+
+static void eval_jac(integer* NEQ, doublereal* T, vec Y,
+                     integer* ML, integer* MU, mat PD, integer* NROWPD)
+{
+  CAMLparam0();
+  CAMLlocal1(vT);
+  value *vNEQ = (value *) NEQ;
+  value vjac = vNEQ[3];
+  value vY = vNEQ[5]; /* data location is always the same */
+  value vPD = vNEQ[7];
+    
+  vT = caml_copy_double(*T);
+  vNEQ[4] = vT;
+  vNEQ[6] = Val_int(MU + 1);
+  Caml_ba_array_val(vPD)->data = PD; /* update location */
+  caml_callbackN(vjac, 4, &(vNEQ[4])); /* vT, vY, vd, vPD */
   CAMLreturn0;
 }
 
@@ -176,13 +195,13 @@ CAMLexport
 value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
                  value vITOL, value vRTOL, value vATOL, value vITASK,
                  value vISTATE, value vRWORK, value vIWORK,
-                 value vYDOT)
+                 value vJAC, value vJT,  value vYDOT, value vPD)
 {
   CAMLparam5(f, vY, vT, vTOUT, vITOL);
   CAMLxparam5(vRTOL, vATOL, vITASK, vISTATE, vRWORK);
-  CAMLxparam2(vIWORK, vYDOT);
+  CAMLxparam5(vIWORK, vJAC, vJT, vYDOT, vPD);
   VEC_PARAMS(Y);
-  value NEQ[4]; /* a "value" is large enough to contain any integer */
+  value NEQ[8]; /* a "value" is large enough to contain any integer */
   doublereal T = Double_val(vT), TOUT = Double_val(vTOUT);
   integer ITOL = Int_val(vITOL);
   integer ITASK = Int_val(vITASK) + 1;
@@ -190,17 +209,22 @@ value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
   integer IOPT = 0;
   VEC_PARAMS(RWORK);
   INT_VEC_PARAMS(IWORK);
-  integer JT = 2;
-  
+  integer JT = Int_val(vJT);
+
+  /* Organized so one can pass this array to the callback */  
   ((int *) NEQ)[0] = dim_Y;
   NEQ[1] = f;
-  NEQ[2] = vY;
-  NEQ[3] = vYDOT;
-
+  NEQ[2] = vYDOT;
+  NEQ[3] = vJAC;
+  /* NEQ[4] reserved for vT */
+  NEQ[5] = vY;
+  /* NEQ[6] reserved for [d]. */
+  NEQ[7] = vPD;
+  
   CALL(lsoda)(&eval_vec_field, (integer *) NEQ, Y_data, &T, &TOUT,
               &ITOL, VEC_DATA(RTOL), VEC_DATA(ATOL), &ITASK, &ISTATE, &IOPT,
               RWORK_data, &dim_RWORK,  IWORK_data, &dim_IWORK,
-              NULL, &JT);
+              &eval_jac, &JT);
   
   CAMLreturn(Val_int(ISTATE));
 }
@@ -209,5 +233,6 @@ CAMLexport
 value FUN(lsoda_bc)(value * argv, int argn)
 {
   return FUN(lsoda)(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5],
-                    argv[6], argv[7], argv[8], argv[9], argv[10], argv[11]);
+                    argv[6], argv[7], argv[8], argv[9], argv[10], argv[11],
+                    argv[12], argv[13], argv[14]);
 }

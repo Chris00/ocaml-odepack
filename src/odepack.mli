@@ -15,7 +15,11 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-(** Binding to ODEPACK. *)
+(** Binding to ODEPACK.
+
+    @author Christophe Troestler (Christophe.Troestler\@umons.ac.be)
+    @version 0.3
+*)
 
 open Bigarray
 

@@ -23,6 +23,16 @@ odepack_stubs$(OBJ): odepack_stubs.c
 opk%$(OBJ): fortran/opk%.f
 	$(FORTRAN) $(FORTRAN_FLAGS) -c $<
 
+.PHONY: install uninstall reinstall
+install: META all
+	$(OCAMLFIND) install $(PKG_NAME) $(INSTALL_FILES)
+uninstall:
+	$(OCAMLFIND) remove $(PKG_NAME)
+
+reinstall:
+	$(MAKE) uninstall
+	$(MAKE) install
+
 META: META.in odepack.mli
 	sed -e "s/@PACKAGE_VERSION@/$(VERSION)/" $< > $@
 

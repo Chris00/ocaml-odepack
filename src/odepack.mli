@@ -37,15 +37,15 @@ type 'a jacobian =
 | Auto_band of int * int (** Internally generated (difference
                              quotient) band Jacobian.  The arguments
                              [(l,u)] are the *)
-| Full of float -> 'a vec -> 'a mat -> unit
-| Band of float -> 'a vec -> int -> 'a mat -> unit
+| Full of (float -> 'a vec -> 'a mat -> unit)
+| Band of (float -> 'a vec -> int -> 'a mat -> unit)
 (** [Band f] [df t y d m]
     [m <- ∂f/∂y(t, y)] where [m] is a band matrix
     [d] being the index of the line of [m] corresponding to the diagonal
  *)
 
-val lsoda : ?rtol:float -> ?atol:float -> ?atol_vec:'a vec ->
-  ?jac:jacobian ->
+val lsoda : ?rtol:float -> ?rtol_vec:'a vec -> ?atol:float -> ?atol_vec:'a vec ->
+  ?jac:'a jacobian ->
   (float -> 'a vec -> 'a vec -> unit) -> float -> 'a vec -> float -> 'a t
 (** [lsoda f t0 y0 t] solves the ODE dy/dt = F(t,y) with initial
     condition y([t0]) = [y0].  The execution of [f t y y'] must
@@ -53,11 +53,10 @@ val lsoda : ?rtol:float -> ?atol:float -> ?atol_vec:'a vec ->
     vector [y0] is MODIFIED to contain the value of the solution at
     time [t].
 
-    @param rtol relative error tolerance parameter.
-
-    @param atol
-
-    @param atol_vec
+    @param rtol  relative error tolerance parameter.
+    @param rtol_vec  relative error tolerance vector.
+    @param atol  absolute error tolerance parameter.
+    @param atol_vec  absolute error tolerance vector.
 
     @param jac is an optional Jabobian matrix.  If the problem is
     expected to be stiff much of the time, you are encouraged to supply

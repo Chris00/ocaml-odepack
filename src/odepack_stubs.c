@@ -51,6 +51,9 @@ typedef void (*JACOBIAN)(integer*, doublereal*, vec,
   integer dim_##V = *big_##V->dim; \
   double *V##_data = ((double *) big_##V->data) /*+ (Long_val(vOFS##V) - 1)*/
 
+#define VEC_DATA(V) \
+  ((double *) Caml_ba_array_val(v##V)->data)
+
 #define INT_VEC_PARAMS(V) \
   struct caml_ba_array *big_##V = Caml_ba_array_val(v##V); \
   integer dim_##V = *big_##V->dim; \
@@ -182,8 +185,6 @@ value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
   value NEQ[4]; /* a "value" is large enough to contain any integer */
   doublereal T = Double_val(vT), TOUT = Double_val(vTOUT);
   integer ITOL = Int_val(vITOL);
-  doublereal RTOL = Double_val(vRTOL);
-  VEC_PARAMS(ATOL);
   integer ITASK = Int_val(vITASK) + 1;
   integer ISTATE = Int_val(vISTATE);
   integer IOPT = 0;
@@ -197,7 +198,7 @@ value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
   NEQ[3] = vYDOT;
 
   CALL(lsoda)(&eval_vec_field, (integer *) NEQ, Y_data, &T, &TOUT,
-              &ITOL, &RTOL, ATOL_data, &ITASK, &ISTATE, &IOPT,
+              &ITOL, VEC_DATA(RTOL), VEC_DATA(ATOL), &ITASK, &ISTATE, &IOPT,
               RWORK_data, &dim_RWORK,  IWORK_data, &dim_IWORK,
               NULL, &JT);
   

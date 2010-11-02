@@ -23,6 +23,10 @@ odepack_stubs$(OBJ): odepack_stubs.c
 opk%$(OBJ): fortran/opk%.f
 	$(FORTRAN) $(FORTRAN_FLAGS) -c $<
 
+.PHONY: doc
+doc: odepack.mli
+	$(OCAMLDOC) -d $(ROOT)/doc/ -html -stars -colorize-code $^
+
 .PHONY: install uninstall reinstall
 install: META all
 	$(OCAMLFIND) install $(PKG_NAME) $(INSTALL_FILES)

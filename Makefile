@@ -1,7 +1,7 @@
 
 
-.PHONY: all byte native install uninstall reinstall tests clean
-all byte native install uninstall reinstall:
+.PHONY: all byte native install uninstall reinstall doc tests clean
+all byte native install uninstall reinstall doc:
 	$(MAKE) -C src $@
 tests: all
 	$(MAKE) -C tests all

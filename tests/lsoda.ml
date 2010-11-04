@@ -13,7 +13,7 @@ let f t (y: vec) (y': vec) =
 let () =
   let y = vec [| 1.; 0.; 0. |] in
   let atol_vec = vec [| 1e-6; 1e-10; 1e-6 |] in
-  let ode = Odepack.lsoda f 0. y 0. ~atol_vec ~rtol:1e-4 in
+  let ode = Odepack.lsoda f y 0. 0. ~atol_vec ~rtol:1e-4 in
   for i = 0 to 11 do
     let t = 0.4 *. 10.**(float i) in
     Odepack.advance ode t;

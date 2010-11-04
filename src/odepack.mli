@@ -56,8 +56,8 @@ type 'a jacobian =
 
 val lsoda : ?rtol:float -> ?rtol_vec:'a vec -> ?atol:float -> ?atol_vec:'a vec ->
   ?jac:'a jacobian ->
-  (float -> 'a vec -> 'a vec -> unit) -> float -> 'a vec -> float -> 'a t
-(** [lsoda f t0 y0 t] solves the ODE dy/dt = F(t,y) with initial
+  (float -> 'a vec -> 'a vec -> unit) -> 'a vec -> float -> float -> 'a t
+(** [lsoda f y0 t0 t] solves the ODE dy/dt = F(t,y) with initial
     condition y([t0]) = [y0].  The execution of [f t y y'] must
     compute the value of the F([t], [y]) and store it in [y'].  The
     vector [y0] is MODIFIED to contain the value of the solution at

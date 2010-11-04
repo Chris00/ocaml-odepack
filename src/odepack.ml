@@ -102,7 +102,7 @@ let tolerances name neq layout rtol rtol_vec atol atol_vec =
 let dummy_jac _ _ _ _ = ()
 
 let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
-    f t0 y0 tout =
+    f y0 t0 tout =
   let neq = Array1.dim y0 in
   let layout = Array1.layout y0 in
   let itol, rtol, atol =

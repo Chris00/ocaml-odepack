@@ -81,3 +81,9 @@ val t : 'a t -> float
     computed. *)
 
 val advance : 'a t -> float -> unit
+(** [advance ode t] modifies [ode] so that an approximation of the
+    value of the solution at times [t] is computed. *)
+
+val sol : 'a t -> float -> 'a vec
+(** [sol ode t] modifies [ode] so that it holds an approximation of
+    the solution at [t] and returns this approximation. *)

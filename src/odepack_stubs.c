@@ -155,9 +155,9 @@ SUBROUTINE(lsodpk)(VEC_FIELD F,
  **********************************************************************/
 
 /* Since NEQ may be an array (with NEQ(1) only used by LSODA), one
- * will use it to 1) pass to the function evaluating the Caml closure,
- * 2) pass the bigarray Y (to avoid recreating it) and 3) pass a
- * bigarray structure to YDOT (created on the first call).  */
+ * will use it to) pass to the function evaluating the Caml closure,
+ * pass the bigarray Y (to avoid recreating it) and pass a bigarray
+ * structure to YDOT (created on the first call),...  */
 static void eval_vec_field(integer* NEQ, doublereal* T, vec Y, vec YDOT)
 {
   CAMLparam0();
@@ -184,7 +184,6 @@ static void eval_jac(integer* NEQ, doublereal* T, vec Y,
     
   vT = caml_copy_double(*T);
   vNEQ[4] = vT;
-  vNEQ[6] = Val_int(MU + 1);
   Caml_ba_array_val(vPD)->data = PD; /* update location */
   caml_callbackN(vjac, 4, &(vNEQ[4])); /* vT, vY, vd, vPD */
   CAMLreturn0;
@@ -218,7 +217,7 @@ value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
   NEQ[3] = vJAC;
   /* NEQ[4] reserved for vT */
   NEQ[5] = vY;
-  /* NEQ[6] reserved for [d]. */
+  NEQ[6] = Val_int(IWORK_data[1]+1); /* MU+1, row corresponding to diagonal */
   NEQ[7] = vPD;
   
   CALL(lsoda)(&eval_vec_field, (integer *) NEQ, Y_data, &T, &TOUT,

@@ -65,6 +65,10 @@ let nqcur ode = ode.iwork.{15}
 let imxer ode = ode.iwork.{16} (* FIXME: fortran/C layout *)
 let advance ode = ode.advance
 
+let sol ode t =
+  ode.advance t;
+  ode.y
+
 (* The Jacobian must have Fortran layout as it must be presented in a
    columnwise manner *)
 external lsoda_fortran : 'a vec_field -> 'a vec -> float -> float ->

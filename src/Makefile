@@ -7,21 +7,32 @@ INSTALL_FILES = META odepack.mli odepack.cmi odepack.cma \
 	odepack.cmxa odepack.a odepack.cmx \
 	$(wildcard dll$(STUBS_LIB).* lib$(STUBS_LIB).*)
 
-.PHONY: all byte native
+FORTRAN_SRC = opkda1.f opkda2.f opkdmain.f
+
+.PHONY: all byte native fortran
 all: byte native
 byte: odepack.cma
 native: odepack.cmxa
 
 odepack.cma odepack.cmxa: odepack.cmo odepack.cmx \
-  opkda1$(OBJ) opkda2$(OBJ) opkdmain$(OBJ) odepack_stubs$(OBJ)
+  $(FORTRAN_SRC:.f=$(OBJ)) odepack_stubs$(OBJ)
 	ocamlmklib -o $(basename $@) -oc $(STUBS_LIB) $^ $(FILIB_LIB) \
 	-lgfortran
 
 odepack_stubs$(OBJ): odepack_stubs.c
 	$(OCAMLC) -c $<
 
-opk%$(OBJ): fortran/opk%.f
+opk%$(OBJ): fortran/opk%.f fortran
 	$(FORTRAN) $(FORTRAN_FLAGS) -c $<
+
+fortran:
+	mkdir -p fortran
+	@for f in $(FORTRAN_SRC); do \
+	  if [ ! -f fortran/$$f ]; then \
+	    echo "Trying to get $$f"; \
+	    wget http://www.netlib.org/odepack/$$f -O fortran/$$f; \
+	  fi; \
+	done
 
 .PHONY: doc
 doc: odepack.mli

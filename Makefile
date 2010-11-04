@@ -9,6 +9,7 @@ tests: all
 clean:
 	$(MAKE) -C src $@
 	$(MAKE) -C tests $@
+	$(MAKE) -C doc $@
 
 
 odepack:

@@ -5,3 +5,5 @@
 *.exe
 .depend.ocaml
 META
+doc/*.html
+doc/*.css

@@ -1,7 +1,7 @@
 name = "odepack"
 version = "@PACKAGE_VERSION@"
 description = "Binding to ODEPACK, a collection of solvers for the initial value problem for ordinary differential equation systems."
-require = "bigarray"
+requires = "bigarray"
 archive(byte) = "odepack.cma"
 archive(native) = "odepack.cmxa"
 

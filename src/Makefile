@@ -16,8 +16,7 @@ native: odepack.cmxa
 
 odepack.cma odepack.cmxa: odepack.cmo odepack.cmx \
   $(FORTRAN_SRC:.f=$(OBJ)) odepack_stubs$(OBJ)
-	ocamlmklib -o $(basename $@) -oc $(STUBS_LIB) $^ $(FILIB_LIB) \
-	-lgfortran
+	ocamlmklib -o $(basename $@) -oc $(STUBS_LIB) $^ -lgfortran
 
 odepack_stubs$(OBJ): odepack_stubs.c
 	$(OCAMLC) -c $<

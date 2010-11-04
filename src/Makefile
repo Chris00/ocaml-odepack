@@ -14,8 +14,8 @@ all: byte native
 byte: odepack.cma
 native: odepack.cmxa
 
-odepack.cma odepack.cmxa: odepack.cmo odepack.cmx \
-  $(FORTRAN_SRC:.f=$(OBJ)) odepack_stubs$(OBJ)
+odepack.cma odepack.cmxa: $(FORTRAN_SRC:.f=$(OBJ)) odepack_stubs$(OBJ) \
+  odepack.cmo odepack.cmx
 	ocamlmklib -o $(basename $@) -oc $(STUBS_LIB) $^ -lgfortran
 
 odepack_stubs$(OBJ): odepack_stubs.c

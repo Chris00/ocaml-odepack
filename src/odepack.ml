@@ -129,14 +129,25 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   let ydot = set_layout (Array1.sub rwork 1 neq) layout in
   let pd = genarray_of_array1 (Array1.sub rwork 1 (dim1_jac * neq)) in
   let pd = reshape_2 pd dim1_jac neq in
+  (* Optional inputs. 0 = default value. *)
+  rwork.{5} <- 0.; (* H0 *)
+  rwork.{6} <- 0.; (* HMAX *)
+  rwork.{7} <- 0.; (* HMIN *)
+  iwork.{5} <- 1;  (* IXPR *)
+  iwork.{6} <- 0;  (* MXSTEP *)
+  iwork.{8} <- 0;  (* MXHNIL *)
+  iwork.{8} <- 0;  (* MXORDN *)
+  iwork.{9} <- 0;  (* MXORDS *)
   let state = lsoda_fortran f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
     ~rwork ~iwork ~jac ~jt  ~ydot ~pd in
-  if state = -3 then invalid_arg "Odepack.lsoda (see written message)";
+  if state = -3 then
+    invalid_arg "Odepack.lsoda (see message written on stdout)";
 
   let rec advance t =
     let state = lsoda_fortran f y0 t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
       ~rwork ~iwork ~jac ~jt ~ydot ~pd in
-    if state = -3 then invalid_arg "Odepack.advance (see written message)";
+    if state = -3 then
+      invalid_arg "Odepack.advance (see message written on stdout)";
     ode.t <- t;
     ode.state <- state
   and ode = { f = f;  t = tout; y = y0;
@@ -144,3 +155,11 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
               advance = advance } in
   ode
 
+
+(* Error messages
+ ***********************************************************************)
+
+external xsetf : int -> unit = "ocaml_odepack_xsetf"
+
+let () =
+  xsetf 1 (* using XSETUN(LUN=0) to redirect to stderr does not work *)

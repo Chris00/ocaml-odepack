@@ -64,6 +64,9 @@ typedef void (*JACOBIAN)(integer*, doublereal*, vec,
  * Declaring Fortran functions
  **********************************************************************/
 
+SUBROUTINE(xsetf)(integer* MFLAG);
+SUBROUTINE(xsetun)(integer* LUN);
+
 SUBROUTINE(lsode)(VEC_FIELD F,
                   integer *NEQ, /*  Number of first-order ODE's. */
                   vec Y,
@@ -154,6 +157,16 @@ SUBROUTINE(lsodpk)(VEC_FIELD F,
  * Bindings
  **********************************************************************/
 
+CAMLexport
+value ocaml_odepack_xsetf(value vflag)
+{
+  /* noalloc */
+  integer mflag = Int_val(vflag);
+  xsetf_(&mflag);
+  return Val_unit;
+}
+
+
 /* Since NEQ may be an array (with NEQ(1) only used by LSODA), one
  * will use it to) pass to the function evaluating the Caml closure,
  * pass the bigarray Y (to avoid recreating it) and pass a bigarray
@@ -179,9 +192,8 @@ static void eval_jac(integer* NEQ, doublereal* T, vec Y,
   CAMLlocal1(vT);
   value *vNEQ = (value *) NEQ;
   value vjac = vNEQ[3];
-  value vY = vNEQ[5]; /* data location is always the same */
   value vPD = vNEQ[7];
-    
+
   vT = caml_copy_double(*T);
   vNEQ[4] = vT;
   Caml_ba_array_val(vPD)->data = PD; /* update location */
@@ -205,12 +217,12 @@ value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
   integer ITOL = Int_val(vITOL);
   integer ITASK = Int_val(vITASK) + 1;
   integer ISTATE = Int_val(vISTATE);
-  integer IOPT = 0;
+  integer IOPT = 1;
   VEC_PARAMS(RWORK);
   INT_VEC_PARAMS(IWORK);
   integer JT = Int_val(vJT);
-
-  /* Organized so one can pass this array to the callback */  
+  
+  /* Organized so one can pass this array to the callback */
   ((int *) NEQ)[0] = dim_Y;
   NEQ[1] = f;
   NEQ[2] = vYDOT;
@@ -219,12 +231,12 @@ value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
   NEQ[5] = vY;
   NEQ[6] = Val_int(IWORK_data[1]+1); /* MU+1, row corresponding to diagonal */
   NEQ[7] = vPD;
-  
+
   CALL(lsoda)(&eval_vec_field, (integer *) NEQ, Y_data, &T, &TOUT,
               &ITOL, VEC_DATA(RTOL), VEC_DATA(ATOL), &ITASK, &ISTATE, &IOPT,
               RWORK_data, &dim_RWORK,  IWORK_data, &dim_IWORK,
               &eval_jac, &JT);
-  
+
   CAMLreturn(Val_int(ISTATE));
 }
 
@@ -235,3 +247,4 @@ value FUN(lsoda_bc)(value * argv, int argn)
                     argv[6], argv[7], argv[8], argv[9], argv[10], argv[11],
                     argv[12], argv[13], argv[14]);
 }
+

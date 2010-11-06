@@ -52,13 +52,11 @@ type jacobian =
     [jac] corresponding to the main diagonal of the Jacobian matrix.  *)
 
 val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
-  ?jac:jacobian -> ?mxstep:int ->
+  ?jac:jacobian -> ?mxstep:int -> ?copy_y0:bool ->
   (float -> vec -> vec -> unit) -> vec -> float -> float -> t
 (** [lsoda f y0 t0 t] solves the ODE dy/dt = F(t,y) with initial
     condition y([t0]) = [y0].  The execution of [f t y y'] must
-    compute the value of the F([t], [y]) and store it in [y'].  The
-    vector [y0] is MODIFIED to contain the value of the solution at
-    time [t].
+    compute the value of the F([t], [y]) and store it in [y'].
 
     @param rtol  relative error tolerance parameter.
     @param rtol_vec  relative error tolerance vector.
@@ -71,6 +69,10 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
 
     @param mxstep maximum number of (internally defined) steps allowed
     during one call to the solver.  The default value is 500.
+
+    @param copy_y0 if [false], the vector [y0] is MODIFIED to contain
+    the value of the solution at time [t].  Otherwise [y0] is
+    unchanged.  Default: [true].
 *)
 
 val vec : t -> vec

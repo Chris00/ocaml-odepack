@@ -101,7 +101,7 @@ let tolerances name neq rtol rtol_vec atol atol_vec =
 let dummy_jac _ _ _ _ = ()
 
 let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
-    ?(mxstep=500) f y0 t0 tout =
+    ?(mxstep=500) ?(copy_y0=true) f y0 t0 tout =
   let neq = Array1.dim y0 in
   let itol, rtol, atol =
     tolerances "Odepack.lsoda" neq rtol rtol_vec atol atol_vec in
@@ -128,6 +128,12 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   rwork.{6} <- 0.; (* HMAX *)
   rwork.{7} <- 0.; (* HMIN *)
   set_iwork iwork ml mu mxstep;
+  let y0 =
+    if copy_y0 then
+      let y = Array1.create float64 fortran_layout (Array1.dim y0) in
+      Array1.blit y0 y;
+      y
+    else y0 in
   let state = lsoda_ f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
     ~rwork ~iwork ~jac ~jt  ~ydot ~pd in
   if state = -3 then

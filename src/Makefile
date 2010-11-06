@@ -9,7 +9,7 @@ INSTALL_FILES = META odepack.mli odepack.cmi odepack.cma \
 
 FORTRAN_SRC = opkda1.f opkda2.f opkdmain.f
 
-.PHONY: all byte native fortran
+.PHONY: all byte native
 all: byte native
 byte: odepack.cma
 native: odepack.cmxa
@@ -21,10 +21,10 @@ odepack.cma odepack.cmxa: $(FORTRAN_SRC:.f=$(OBJ)) odepack_stubs$(OBJ) \
 odepack_stubs$(OBJ): odepack_stubs.c
 	$(OCAMLC) -c $<
 
-opk%$(OBJ): fortran/opk%.f fortran
+opk%$(OBJ): fortran/opk%.f
 	$(FORTRAN) $(FORTRAN_FLAGS) -c $<
 
-fortran:
+fortran/opk%.f:
 	mkdir -p fortran
 	@for f in $(FORTRAN_SRC); do \
 	  if [ ! -f fortran/$$f ]; then \
@@ -53,4 +53,4 @@ META: META.in odepack.mli
 include $(ROOT)/Makefile.ocaml
 
 clean::
-	$(RM) $(wildcard dllodepack_stubs.so)
+	$(RM) $(wildcard $(STUBS_LIB).so)

@@ -25,16 +25,6 @@
 
 #include "f2c.h"
 
-CAMLexport value
-ocaml_odepack_set_layout(value vb, value layout)
-{
-  CAMLparam2(vb, layout);
-  struct caml_ba_array *b = Caml_ba_array_val(vb);
-  b->flags &= ~CAML_BA_LAYOUT_MASK;
-  b->flags |= Int_val(layout);
-  CAMLreturn(vb);
-}
-
 #define CALL(name) d ## name ## _
 #define SUBROUTINE(name) extern void CALL(name)
 #define FUN(name) ocaml_odepack_d ## name
@@ -64,8 +54,7 @@ typedef void (*JACOBIAN)(integer*, doublereal*, vec,
  * Declaring Fortran functions
  **********************************************************************/
 
-SUBROUTINE(xsetf)(integer* MFLAG);
-SUBROUTINE(xsetun)(integer* LUN);
+extern void xsetf_(integer* MFLAG);
 
 SUBROUTINE(lsode)(VEC_FIELD F,
                   integer *NEQ, /*  Number of first-order ODE's. */
@@ -166,7 +155,6 @@ value ocaml_odepack_xsetf(value vflag)
   return Val_unit;
 }
 
-
 /* Since NEQ may be an array (with NEQ(1) only used by LSODA), one
  * will use it to) pass to the function evaluating the Caml closure,
  * pass the bigarray Y (to avoid recreating it) and pass a bigarray
@@ -236,7 +224,7 @@ value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
               &ITOL, VEC_DATA(RTOL), VEC_DATA(ATOL), &ITASK, &ISTATE, &IOPT,
               RWORK_data, &dim_RWORK,  IWORK_data, &dim_IWORK,
               &eval_jac, &JT);
-
+  
   CAMLreturn(Val_int(ISTATE));
 }
 

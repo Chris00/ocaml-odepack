@@ -9,7 +9,10 @@ SOURCES = $(wildcard *.ml)
 all: byte native
 native: $(SOURCES:.ml=.com)
 
-$(SOURCES:.ml=.com): $(ROOT)/src/odepack.cmxa
-$(SOURCES:.ml=.exe): $(ROOT)/src/odepack.cma
+$(SOURCES:.ml=.com) $(SOURCES:.ml=.cmx): $(ROOT)/src/odepack.cmxa
+$(SOURCES:.ml=.exe) $(SOURCES:.ml=.cmo): $(ROOT)/src/odepack.cma
+
+pendulum: pendulum.f
+	$(FORTRAN) $(FORTRAN_FLAGS) -o $@ $< $(ROOT)/src/opkd*$(OBJ)
 
 include $(ROOT)/Makefile.ocaml

@@ -17,37 +17,33 @@
 
 open Bigarray
 
-type 'a vec = (float, float64_elt, 'a) Array1.t
-type 'a mat = (float, float64_elt, 'a) Array2.t
-type 'a int_vec = (int, int_elt, 'a) Array1.t
+type vec = (float, float64_elt, fortran_layout) Array1.t
+type mat = (float, float64_elt, fortran_layout) Array2.t
+type int_vec = (int, int_elt, fortran_layout) Array1.t
 
-external set_layout : ('a, 'b, _) Array1.t -> 'l layout -> ('a, 'b, 'l) Array1.t
-  = "ocaml_odepack_set_layout"
-(* [set_layout ba l] _modifies_ the bigarray [ba] to it becomes of the
-   new layout.  [ba] should not be used after that (its internal
-   informations do not correspond anymore to those of the type
-   system). *)
+(* specialize version to int (for speed) *)
+let max i j = if (i:int) > j then i else j
 
-type 'a vec_field = float -> 'a vec -> 'a vec -> unit
+type vec_field = float -> vec -> vec -> unit
 (* [f t y y'] where y' must be used for the storage of the fector
    field at (t,y):  y' <- f(t,y). *)
 
-type 'a jacobian =
+type jacobian =
 | Auto_full
 | Auto_band of int * int
-| Full of (float -> 'a vec -> fortran_layout mat -> unit)
-| Band of int * int * (float -> 'a vec -> int -> fortran_layout mat -> unit)
+| Full of (float -> vec -> mat -> unit)
+| Band of int * int * (float -> vec -> int -> mat -> unit)
 
 type task = TOUT | One_step | First_msh_point | TOUT_TCRIT | One_step_TCRIT
 
-type 'a t = {
-  f: 'a vec_field;
+type t = {
+  f: vec_field;
   mutable t: float;
-  y: 'a vec;
+  y: vec;
   mutable state: int;
-  rwork: fortran_layout vec;
-  iwork: fortran_layout int_vec;
-  advance: float -> unit
+  rwork: vec;
+  iwork: int_vec;
+  advance: float -> unit;
 }
 
 let t ode = ode.t
@@ -71,19 +67,19 @@ let sol ode t =
 
 (* The Jacobian must have Fortran layout as it must be presented in a
    columnwise manner *)
-external lsoda_fortran : 'a vec_field -> 'a vec -> float -> float ->
-  itol:int -> rtol:'b vec -> atol:'c vec -> task -> state:int ->
-  rwork:fortran_layout vec -> iwork:fortran_layout int_vec ->
-  jac:(float -> 'a vec -> int -> fortran_layout mat -> unit) -> jt:int ->
-  ydot:'a vec -> pd:fortran_layout mat -> int
+external lsoda_ : vec_field -> vec -> float -> float ->
+  itol:int -> rtol:vec -> atol:vec -> task -> state:int ->
+  rwork:vec -> iwork:int_vec ->
+  jac:(float -> vec -> int -> mat -> unit) -> jt:int ->
+  ydot:vec -> pd:mat -> int
     = "ocaml_odepack_dlsoda_bc" "ocaml_odepack_dlsoda"
 
-let tolerances name neq layout rtol rtol_vec atol atol_vec =
+let tolerances name neq rtol rtol_vec atol atol_vec =
   let itol, rtol = match rtol_vec with
     | None ->
       let v = Array1.create float64 fortran_layout 1 in
       v.{1} <- rtol;
-      1, set_layout v layout
+      1, v
     | Some v ->
       if Array1.dim v <> neq then
         invalid_arg(name ^ ": dim rtol_vec <> size ODE system");
@@ -92,7 +88,7 @@ let tolerances name neq layout rtol rtol_vec atol atol_vec =
     | None ->
       let v = Array1.create float64 fortran_layout 1 in
       v.{1} <- atol;
-      itol, set_layout v layout
+      itol, v
     | Some v ->
       if Array1.dim v <> neq then
         invalid_arg(name ^ ": dim atol_vec <> size ODE system");
@@ -104,29 +100,27 @@ let dummy_jac _ _ _ _ = ()
 let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
     f y0 t0 tout =
   let neq = Array1.dim y0 in
-  let layout = Array1.layout y0 in
   let itol, rtol, atol =
-    tolerances "Odepack.lsoda" neq layout rtol rtol_vec atol atol_vec in
+    tolerances "Odepack.lsoda" neq rtol rtol_vec atol atol_vec in
   let iwork = Array1.create int fortran_layout (20 + neq) in
   let jt, jac, dim1_jac, lrs = match jac with
     | Auto_full ->
-      2, dummy_jac, neq, 22 + 9 * neq + neq * neq
+      2, dummy_jac, neq, 22 + (9 + neq) * neq
     | Auto_band(ml, mu) ->
       iwork.{1} <- ml;
       iwork.{2} <- mu;
       5, dummy_jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq
     | Full jac ->
-      1, (fun t y _ pd -> jac t y pd), neq, 22 + 9 * neq + neq * neq
+      1, (fun t y _ pd -> jac t y pd), neq, 22 + (9 + neq) * neq
     | Band (ml, mu, jac) ->
       iwork.{1} <- ml;
       iwork.{2} <- mu;
       4, jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq in
   let lrn = 20 + 16 * neq in
-  let dim_rwork = if lrn > lrs then lrn else lrs in
-  let rwork = Array1.create float64 fortran_layout dim_rwork in
+  let rwork = Array1.create float64 fortran_layout (max lrs lrn) in
   (* Create bigarrays, proxy for rwork, that will encapsulate the
      array of devivatives or the jacobian for OCaml. *)
-  let ydot = set_layout (Array1.sub rwork 1 neq) layout in
+  let ydot = Array1.sub rwork 1 neq in
   let pd = genarray_of_array1 (Array1.sub rwork 1 (dim1_jac * neq)) in
   let pd = reshape_2 pd dim1_jac neq in
   (* Optional inputs. 0 = default value. *)
@@ -135,16 +129,16 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   rwork.{7} <- 0.; (* HMIN *)
   iwork.{5} <- 1;  (* IXPR *)
   iwork.{6} <- 0;  (* MXSTEP *)
-  iwork.{8} <- 0;  (* MXHNIL *)
+  iwork.{7} <- 0;  (* MXHNIL *)
   iwork.{8} <- 0;  (* MXORDN *)
   iwork.{9} <- 0;  (* MXORDS *)
-  let state = lsoda_fortran f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
+  let state = lsoda_ f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
     ~rwork ~iwork ~jac ~jt  ~ydot ~pd in
   if state = -3 then
     invalid_arg "Odepack.lsoda (see message written on stdout)";
 
   let rec advance t =
-    let state = lsoda_fortran f y0 t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
+    let state = lsoda_ f y0 t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
       ~rwork ~iwork ~jac ~jt ~ydot ~pd in
     if state = -3 then
       invalid_arg "Odepack.advance (see message written on stdout)";

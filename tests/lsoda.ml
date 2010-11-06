@@ -2,7 +2,7 @@
 open Printf
 open Bigarray
 
-type vec = fortran_layout Odepack.vec
+type vec = Odepack.vec
 let vec a = Array1.of_array float64 fortran_layout a
 
 let f t (y: vec) (y': vec) =

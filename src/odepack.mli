@@ -58,10 +58,18 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
     condition y([t0]) = [y0].  The execution of [f t y y'] must
     compute the value of the F([t], [y]) and store it in [y'].
 
-    @param rtol  relative error tolerance parameter.
+    @param rtol  relative error tolerance parameter.  Default [1e-6].
     @param rtol_vec  relative error tolerance vector.
-    @param atol  absolute error tolerance parameter.
+    @param atol  absolute error tolerance parameter.  Default [1e-6].
     @param atol_vec  absolute error tolerance vector.
+
+    If [rtol_vec] (resp. [atol_vec]) is specified, it is used in place
+    of [rtol] (resp. [atol]).  Specifying only [rtol] (resp. [atol])
+    is equivalent to pass a constant [rtol_vec] (resp. [atol_vec]).
+    The solver will control the vector E = (E(i)) of estimated local
+    errors in [y], according to an inequality of the form
+    max-norm(E(i)/EWT(i)) <= 1, where [EWT(i) = rtol_vec.{i} *
+    abs_float(y.{i}) +. atol_vec.{i}].
 
     @param jac is an optional Jabobian matrix.  If the problem is
     expected to be stiff much of the time, you are encouraged to supply

@@ -52,7 +52,7 @@ type jacobian =
     [jac] corresponding to the main diagonal of the Jacobian matrix.  *)
 
 val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
-  ?jac:jacobian ->
+  ?jac:jacobian -> ?mxstep:int ->
   (float -> vec -> vec -> unit) -> vec -> float -> float -> t
 (** [lsoda f y0 t0 t] solves the ODE dy/dt = F(t,y) with initial
     condition y([t0]) = [y0].  The execution of [f t y y'] must
@@ -68,6 +68,9 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
     @param jac is an optional Jabobian matrix.  If the problem is
     expected to be stiff much of the time, you are encouraged to supply
     [jac], for the sake of efficiency.  Default: [Auto_full].
+
+    @param mxstep maximum number of (internally defined) steps allowed
+    during one call to the solver.  The default value is 500.
 *)
 
 val vec : t -> vec

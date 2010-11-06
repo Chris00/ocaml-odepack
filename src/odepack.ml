@@ -74,6 +74,9 @@ external lsoda_ : vec_field -> vec -> float -> float ->
   ydot:vec -> pd:mat -> int
     = "ocaml_odepack_dlsoda_bc" "ocaml_odepack_dlsoda"
 
+external set_iwork : int_vec -> ml:int -> mu:int -> mxstep:int -> unit
+  = "ocaml_odepack_set_iwork"
+
 let tolerances name neq rtol rtol_vec atol atol_vec =
   let itol, rtol = match rtol_vec with
     | None ->
@@ -98,24 +101,21 @@ let tolerances name neq rtol rtol_vec atol atol_vec =
 let dummy_jac _ _ _ _ = ()
 
 let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
-    f y0 t0 tout =
+    ?(mxstep=500) f y0 t0 tout =
   let neq = Array1.dim y0 in
   let itol, rtol, atol =
     tolerances "Odepack.lsoda" neq rtol rtol_vec atol atol_vec in
+  (* FIXME: int allocates "long" on the C side, hence too much is alloc?? *)
   let iwork = Array1.create int fortran_layout (20 + neq) in
-  let jt, jac, dim1_jac, lrs = match jac with
+  let jt, ml, mu, jac, dim1_jac, lrs = match jac with
     | Auto_full ->
-      2, dummy_jac, neq, 22 + (9 + neq) * neq
+      2, 0, 0, dummy_jac, neq, 22 + (9 + neq) * neq
     | Auto_band(ml, mu) ->
-      iwork.{1} <- ml;
-      iwork.{2} <- mu;
-      5, dummy_jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq
+      5, ml, mu, dummy_jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq
     | Full jac ->
-      1, (fun t y _ pd -> jac t y pd), neq, 22 + (9 + neq) * neq
+      1, 0, 0, (fun t y _ pd -> jac t y pd), neq, 22 + (9 + neq) * neq
     | Band (ml, mu, jac) ->
-      iwork.{1} <- ml;
-      iwork.{2} <- mu;
-      4, jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq in
+      4, ml, mu, jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq in
   let lrn = 20 + 16 * neq in
   let rwork = Array1.create float64 fortran_layout (max lrs lrn) in
   (* Create bigarrays, proxy for rwork, that will encapsulate the
@@ -127,11 +127,7 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   rwork.{5} <- 0.; (* H0 *)
   rwork.{6} <- 0.; (* HMAX *)
   rwork.{7} <- 0.; (* HMIN *)
-  iwork.{5} <- 1;  (* IXPR *)
-  iwork.{6} <- 0;  (* MXSTEP *)
-  iwork.{7} <- 0;  (* MXHNIL *)
-  iwork.{8} <- 0;  (* MXORDN *)
-  iwork.{9} <- 0;  (* MXORDS *)
+  set_iwork iwork ml mu mxstep;
   let state = lsoda_ f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
     ~rwork ~iwork ~jac ~jt  ~ydot ~pd in
   if state = -3 then

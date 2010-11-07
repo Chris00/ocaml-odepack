@@ -2,6 +2,7 @@ ROOT = ..
 include $(ROOT)/Makefile.conf
 OCAMLPACKS = bigarray
 OCAMLINCLUDES = $(ROOT)/src
+#OCAMLOPT_FLAGS = -g
 
 SOURCES = $(wildcard *.ml)
 

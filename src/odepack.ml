@@ -65,12 +65,13 @@ let sol ode t =
   ode.advance t;
   ode.y
 
-(* The Jacobian must have Fortran layout as it must be presented in a
-   columnwise manner *)
-external lsoda_ : vec_field -> vec -> float -> float ->
+(* The vector flield (type [vec_field]) and jacobian (type [float ->
+   vec -> int -> mat -> unit]) functions must be registered.  The
+   Jacobian must have Fortran layout as it must be presented in a
+   columnwise manner. *)
+external lsoda_ : vec -> float -> float ->
   itol:int -> rtol:vec -> atol:vec -> task -> state:int ->
-  rwork:vec -> iwork:int_vec ->
-  jac:(float -> vec -> int -> mat -> unit) -> jt:int ->
+  rwork:vec -> iwork:int_vec -> jt:int ->
   ydot:vec -> pd:mat -> int
     = "ocaml_odepack_dlsoda_bc" "ocaml_odepack_dlsoda"
 
@@ -134,14 +135,18 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
       Array1.blit y0 y;
       y
     else y0 in
-  let state = lsoda_ f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
-    ~rwork ~iwork ~jac ~jt  ~ydot ~pd in
+  Callback.register "Odepack.lsoda.f" f;
+  Callback.register "Odepack.lsoda.jac" jac;
+  let state = lsoda_ y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
+    ~rwork ~iwork ~jt  ~ydot ~pd in
   if state = -3 then
     invalid_arg "Odepack.lsoda (see message written on stdout)";
 
   let rec advance t =
-    let state = lsoda_ f y0 t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
-      ~rwork ~iwork ~jac ~jt ~ydot ~pd in
+    Callback.register "Odepack.lsoda.f" f;
+    Callback.register "Odepack.lsoda.jac" jac;
+    let state = lsoda_ y0 t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
+      ~rwork ~iwork ~jt ~ydot ~pd in
     if state = -3 then
       invalid_arg "Odepack.advance (see message written on stdout)";
     ode.t <- t;

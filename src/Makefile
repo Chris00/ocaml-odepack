@@ -4,6 +4,8 @@ STUBS_LIB = odepack_stubs
 DOCDIR = $(ROOT)/doc
 WEB = shell.forge.ocamlcore.org:/home/groups/odepack/htdocs
 
+#OCAMLOPT_FLAGS += -g
+
 INSTALL_FILES = META odepack.mli odepack.cmi odepack.cma \
 	odepack.cmxa odepack.a odepack.cmx \
 	$(wildcard dll$(STUBS_LIB).* lib$(STUBS_LIB).*)

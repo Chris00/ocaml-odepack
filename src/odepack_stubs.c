@@ -164,12 +164,13 @@ static void eval_vec_field(integer* NEQ, doublereal* T, vec Y, vec YDOT)
   CAMLparam0();
   CAMLlocal1(vT);
   value *vNEQ = (value *) NEQ;
-  value vf = vNEQ[1];
+  value *closure_f = (value *) vNEQ[1];
   value vYDOT = vNEQ[2];
   value vY = vNEQ[5]; /* data location is always the same */
+
   Caml_ba_array_val(vYDOT)->data = YDOT; /* update RWORK location */
   vT = caml_copy_double(*T);
-  caml_callback3(vf, vT, vY, vYDOT);
+  caml_callback3(*closure_f, vT, vY, vYDOT);
   CAMLreturn0;
 }
 
@@ -179,13 +180,13 @@ static void eval_jac(integer* NEQ, doublereal* T, vec Y,
   CAMLparam0();
   CAMLlocal1(vT);
   value *vNEQ = (value *) NEQ;
-  value vjac = vNEQ[3];
+  value *closure_jac = (value *) vNEQ[3];
   value vPD = vNEQ[7];
-
+  
   vT = caml_copy_double(*T);
   vNEQ[4] = vT;
   Caml_ba_array_val(vPD)->data = PD; /* update location */
-  caml_callbackN(vjac, 4, &(vNEQ[4])); /* vT, vY, vd, vPD */
+  caml_callbackN(*closure_jac, 4, &(vNEQ[4])); /* vT, vY, vd, vPD */
   CAMLreturn0;
 }
 
@@ -206,16 +207,17 @@ value ocaml_odepack_set_iwork(value vIWORK, value vML, value vMU,
   return Val_unit;
 }
 
-
 CAMLexport
-value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
+value FUN(lsoda)(value vY, value vT, value vTOUT,
                  value vITOL, value vRTOL, value vATOL, value vITASK,
                  value vISTATE, value vRWORK, value vIWORK,
-                 value vJAC, value vJT,  value vYDOT, value vPD)
+                 value vJT,  value vYDOT, value vPD)
 {
-  CAMLparam5(f, vY, vT, vTOUT, vITOL);
-  CAMLxparam5(vRTOL, vATOL, vITASK, vISTATE, vRWORK);
-  CAMLxparam5(vIWORK, vJAC, vJT, vYDOT, vPD);
+  CAMLparam5(vY, vT, vTOUT, vITOL, vRTOL);
+  CAMLxparam5(vATOL, vITASK, vISTATE, vRWORK, vIWORK);
+  CAMLxparam3(vJT, vYDOT, vPD);
+  value *closure_f = NULL;
+  value *closure_jac = NULL;
   VEC_PARAMS(Y);
   value NEQ[8]; /* a "value" is large enough to contain any integer */
   doublereal T = Double_val(vT), TOUT = Double_val(vTOUT);
@@ -226,12 +228,18 @@ value FUN(lsoda)(value f, value vY, value vT, value vTOUT,
   VEC_PARAMS(RWORK);
   INT_VEC_PARAMS(IWORK);
   integer JT = Int_val(vJT);
-  
+
+  /* The function registered can vary between calls.  For a given
+     registration, the *pointer* returned by caml_named_value is
+     constant (thus is passed as a param to eval_vec_field,...). */
+  closure_f = caml_named_value("Odepack.lsoda.f");
+  closure_jac = caml_named_value("Odepack.lsoda.jac");
+
   /* Organized so one can pass this array to the callback */
   ((int *) NEQ)[0] = dim_Y;
-  NEQ[1] = f;
+  NEQ[1] = (value) closure_f; /* "value" can hold any pointer */
   NEQ[2] = vYDOT;
-  NEQ[3] = vJAC;
+  NEQ[3] = (value) closure_jac;
   /* NEQ[4] reserved for vT */
   NEQ[5] = vY;
   NEQ[6] = Val_int(IWORK_data[1]+1); /* MU+1, row corresponding to diagonal */
@@ -250,6 +258,6 @@ value FUN(lsoda_bc)(value * argv, int argn)
 {
   return FUN(lsoda)(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5],
                     argv[6], argv[7], argv[8], argv[9], argv[10], argv[11],
-                    argv[12], argv[13], argv[14]);
+                    argv[12]);
 }
 

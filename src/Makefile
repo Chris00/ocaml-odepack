@@ -2,6 +2,7 @@ ROOT = ..
 include $(ROOT)/Makefile.conf
 STUBS_LIB = odepack_stubs
 DOCDIR = $(ROOT)/doc
+WEB = shell.forge.ocamlcore.org:/home/groups/odepack/htdocs
 
 INSTALL_FILES = META odepack.mli odepack.cmi odepack.cma \
 	odepack.cmxa odepack.a odepack.cmx \
@@ -33,7 +34,7 @@ fortran/opk%.f:
 	  fi; \
 	done
 
-.PHONY: doc
+.PHONY: doc upload-doc
 MY_ODOC = $(HOME)/software/OCaml/doc-generators/html_utf8.cmo
 doc: odepack.mli
 	if [ -e "$(MY_ODOC)" ]; then \
@@ -41,6 +42,9 @@ doc: odepack.mli
 	else \
 	  $(OCAMLDOC) -d $(ROOT)/doc/ -html -stars -colorize-code $^; \
 	fi
+
+upload-doc: doc
+	scp -r $(DOCDIR) $(WEB)
 
 .PHONY: install uninstall reinstall
 install: META all

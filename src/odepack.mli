@@ -15,7 +15,8 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-(** Binding to ODEPACK.
+(** Binding to ODEPACK.  This is a collection of solvers for the
+    initial value problem for ordinary differential equation systems.
 
     @author Christophe Troestler (Christophe.Troestler\@umons.ac.be)
     @version 0.3

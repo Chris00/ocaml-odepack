@@ -7,3 +7,4 @@
 META
 doc/*.html
 doc/*.css
+tests/pendulum

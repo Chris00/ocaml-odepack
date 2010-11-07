@@ -193,13 +193,13 @@ static void eval_jac(integer* NEQ, doublereal* T, vec Y,
 
 CAMLexport
 value ocaml_odepack_set_iwork(value vIWORK, value vML, value vMU,
-                              value vMXSTEP)
+                              value vIXPR, value vMXSTEP)
 {
   /* noalloc */
   INT_VEC_PARAMS(IWORK);
   IWORK_data[0] = Int_val(vML);
   IWORK_data[1] = Int_val(vMU);
-  IWORK_data[4] = 1; /* IXPR */
+  IWORK_data[4] = (Bool_val(vIXPR))? 1 : 0;
   IWORK_data[5] = Int_val(vMXSTEP);
   IWORK_data[6] = 0; /* MXHNIL */
   IWORK_data[7] = 0; /* MXORDN */

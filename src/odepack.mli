@@ -54,6 +54,7 @@ type jacobian =
 
 val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
   ?jac:jacobian -> ?mxstep:int -> ?copy_y0:bool ->
+  ?debug:bool -> ?debug_switches:bool ->
   (float -> vec -> vec -> unit) -> vec -> float -> float -> t
 (** [lsoda f y0 t0 t] solves the ODE dy/dt = F(t,y) with initial
     condition y([t0]) = [y0].  The execution of [f t y y'] must
@@ -82,6 +83,13 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
     @param copy_y0 if [false], the vector [y0] is MODIFIED to contain
     the value of the solution at time [t].  Otherwise [y0] is
     unchanged.  Default: [true].
+
+    @param debug allows [lsoda] to print messages.  Default [true].
+    The messages contain valuable information, it is not recommended
+    to turn thois off.
+
+    @param debug_switches prints a message to stdout on each
+    (automatic) method switch (between nonstiff and stiff).  Default: [false].
 *)
 
 val vec : t -> vec

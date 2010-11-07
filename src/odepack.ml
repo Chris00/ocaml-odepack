@@ -75,8 +75,12 @@ external lsoda_ : vec -> float -> float ->
   ydot:vec -> pd:mat -> int
     = "ocaml_odepack_dlsoda_bc" "ocaml_odepack_dlsoda"
 
-external set_iwork : int_vec -> ml:int -> mu:int -> mxstep:int -> unit
+external set_iwork : int_vec -> ml:int -> mu:int -> ixpr:bool ->
+  mxstep:int -> unit
   = "ocaml_odepack_set_iwork"
+
+external xsetf : int -> unit = "ocaml_odepack_xsetf"
+
 
 let tolerances name neq rtol rtol_vec atol atol_vec =
   let itol, rtol = match rtol_vec with
@@ -102,7 +106,8 @@ let tolerances name neq rtol rtol_vec atol atol_vec =
 let dummy_jac _ _ _ _ = ()
 
 let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
-    ?(mxstep=500) ?(copy_y0=true) f y0 t0 tout =
+    ?(mxstep=500) ?(copy_y0=true) ?(debug=true) ?(debug_switches=false)
+    f y0 t0 tout =
   let neq = Array1.dim y0 in
   let itol, rtol, atol =
     tolerances "Odepack.lsoda" neq rtol rtol_vec atol atol_vec in
@@ -128,7 +133,8 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   rwork.{5} <- 0.; (* H0 *)
   rwork.{6} <- 0.; (* HMAX *)
   rwork.{7} <- 0.; (* HMIN *)
-  set_iwork iwork ml mu mxstep;
+  set_iwork iwork ~ml ~mu ~ixpr:debug_switches ~mxstep;
+  xsetf (if debug then 1 else 0);
   let y0 =
     if copy_y0 then
       let y = Array1.create float64 fortran_layout (Array1.dim y0) in
@@ -145,6 +151,7 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   let rec advance t =
     Callback.register "Odepack.lsoda.f" f;
     Callback.register "Odepack.lsoda.jac" jac;
+    xsetf (if debug then 1 else 0); (* FIXME: ~ costs more than desired? *)
     let state = lsoda_ y0 t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
       ~rwork ~iwork ~jt ~ydot ~pd in
     if state = -3 then
@@ -155,12 +162,3 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
               state = state;  rwork = rwork;  iwork = iwork;
               advance = advance } in
   ode
-
-
-(* Error messages
- ***********************************************************************)
-
-external xsetf : int -> unit = "ocaml_odepack_xsetf"
-
-let () =
-  xsetf 1 (* using XSETUN(LUN=0) to redirect to stderr does not work *)

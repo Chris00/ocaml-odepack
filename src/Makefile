@@ -34,8 +34,13 @@ fortran/opk%.f:
 	done
 
 .PHONY: doc
+MY_ODOC = $(HOME)/software/OCaml/doc-generators/html_utf8.cmo
 doc: odepack.mli
-	$(OCAMLDOC) -d $(ROOT)/doc/ -html -stars -colorize-code $^
+	if [ -e "$(MY_ODOC)" ]; then \
+	  $(OCAMLDOC) -d $(ROOT)/doc/ -g $(MY_ODOC) -stars -colorize-code $^; \
+	else \
+	  $(OCAMLDOC) -d $(ROOT)/doc/ -html -stars -colorize-code $^; \
+	fi
 
 .PHONY: install uninstall reinstall
 install: META all

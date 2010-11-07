@@ -17,7 +17,7 @@ RM	?= rm -f --
 OCAMLLIBDIR ?= $(shell $(OCAMLC) -where)
 
 OCAMLC_FLAGS ?= -annot -principal
-OCAMLOPT_FLAGS ?= -dtypes -inline 3
+OCAMLOPT_FLAGS ?= -annot -inline 3
 PP_FLAGS = $(if $(PP), -pp "$(PP)")
 
 OCAML_PACKAGES=$(if $(OCAMLPACKS), -package "$(OCAMLPACKS)")

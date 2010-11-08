@@ -86,10 +86,11 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
 
     @param debug allows [lsoda] to print messages.  Default [true].
     The messages contain valuable information, it is not recommended
-    to turn thois off.
+    to turn them off.
 
     @param debug_switches prints a message to stdout on each
-    (automatic) method switch (between nonstiff and stiff).  Default: [false].
+    (automatic) method switch (between nonstiff and stiff).
+    Default: [false].
 *)
 
 val vec : t -> vec

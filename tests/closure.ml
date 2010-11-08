@@ -10,7 +10,7 @@ let vec_field a t (u:ODE.vec) (du:ODE.vec) =
 
 let () =
   let u0 = Array1.of_array float64 fortran_layout [| 1.; 2. |] in
-  for i = 10 to 31 do
+  for i = 10 to 100 do
     let ode = ODE.lsoda (vec_field 1.) u0 0. (float i) in
     printf "%2i: u.{1} = %g\n%!" i (ODE.vec ode).{1}
   done

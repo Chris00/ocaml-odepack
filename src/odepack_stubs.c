@@ -208,16 +208,16 @@ value ocaml_odepack_set_iwork(value vIWORK, value vML, value vMU,
 }
 
 CAMLexport
-value FUN(lsoda)(value vY, value vT, value vTOUT,
+value FUN(lsoda)(value vf, value vY, value vT, value vTOUT,
                  value vITOL, value vRTOL, value vATOL, value vITASK,
                  value vISTATE, value vRWORK, value vIWORK,
-                 value vJT,  value vYDOT, value vPD)
+                 value vJAC, value vJT,  value vYDOT, value vPD)
 {
-  CAMLparam5(vY, vT, vTOUT, vITOL, vRTOL);
-  CAMLxparam5(vATOL, vITASK, vISTATE, vRWORK, vIWORK);
-  CAMLxparam3(vJT, vYDOT, vPD);
-  value *closure_f = NULL;
-  value *closure_jac = NULL;
+  CAMLparam5(vf, vY, vT, vTOUT, vITOL);
+  CAMLxparam5(vRTOL, vATOL, vITASK, vISTATE, vRWORK);
+  CAMLxparam5(vIWORK, vJAC, vJT, vYDOT, vPD);
+  value *closure_f = &vf;
+  value *closure_jac = &vJAC;
   VEC_PARAMS(Y);
   value NEQ[8]; /* a "value" is large enough to contain any integer */
   doublereal T = Double_val(vT), TOUT = Double_val(vTOUT);
@@ -228,12 +228,6 @@ value FUN(lsoda)(value vY, value vT, value vTOUT,
   VEC_PARAMS(RWORK);
   INT_VEC_PARAMS(IWORK);
   integer JT = Int_val(vJT);
-
-  /* The function registered can vary between calls.  For a given
-     registration, the *pointer* returned by caml_named_value is
-     constant (thus is passed as a param to eval_vec_field,...). */
-  closure_f = caml_named_value("Odepack.lsoda.f");
-  closure_jac = caml_named_value("Odepack.lsoda.jac");
 
   /* Organized so one can pass this array to the callback */
   ((int *) NEQ)[0] = dim_Y;
@@ -258,6 +252,6 @@ value FUN(lsoda_bc)(value * argv, int argn)
 {
   return FUN(lsoda)(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5],
                     argv[6], argv[7], argv[8], argv[9], argv[10], argv[11],
-                    argv[12]);
+                    argv[12], argv[13], argv[14]);
 }
 

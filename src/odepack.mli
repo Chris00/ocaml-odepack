@@ -35,22 +35,21 @@ type t
 
 (** Types of Jacobian matrices. *)
 type jacobian =
-| Auto_full (** Internally generated (difference quotient) full Jacobian *)
-| Auto_band of int * int (** Internally generated (difference
-                             quotient) band Jacobian.  It takes
-                             [(l,u)] where [l] (resp. [u]) is the
-                             number of lines below (resp. above) the
-                             diagonal (excluded). *)
-| Full of (float -> vec -> mat -> unit)
-(** [Full df] means that a function [df] is provided to compute the
-    full Jacobian matrix (∂f_i/∂y_j) of the vector field f(t,y).
-    [df t y jac] must store ∂f_i/∂y_j([t],[y]) into [jac.{i,j}]. *)
-| Band of int * int * (float -> vec -> int -> mat -> unit)
-(** [Band(l, u, df)] means that a function [df] is provided to compute
-    the banded Jacobian matrix with [l] (resp. [u]) diagonals below
-    (resp. above) the main one (not counted).  [df t y d jac] must
-    store ∂f_i/∂y_j([t],[y]) into [jac.{i-j+d, j}].  [d] is the row of
-    [jac] corresponding to the main diagonal of the Jacobian matrix.  *)
+  | Auto_full (** Internally generated (difference quotient) full Jacobian *)
+  | Auto_band of int * int
+  (** Internally generated (difference quotient) band Jacobian.  It
+      takes [(l,u)] where [l] (resp. [u]) is the number of lines below
+      (resp. above) the diagonal (excluded). *)
+  | Full of (float -> vec -> mat -> unit)
+  (** [Full df] means that a function [df] is provided to compute the
+      full Jacobian matrix (∂f_i/∂y_j) of the vector field f(t,y).
+      [df t y jac] must store ∂f_i/∂y_j([t],[y]) into [jac.{i,j}]. *)
+  | Band of int * int * (float -> vec -> int -> mat -> unit)
+  (** [Band(l, u, df)] means that a function [df] is provided to compute
+      the banded Jacobian matrix with [l] (resp. [u]) diagonals below
+      (resp. above) the main one (not counted).  [df t y d jac] must
+      store ∂f_i/∂y_j([t],[y]) into [jac.{i-j+d, j}].  [d] is the row of
+      [jac] corresponding to the main diagonal of the Jacobian matrix.  *)
 
 val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
   ?jac:jacobian -> ?mxstep:int -> ?copy_y0:bool ->

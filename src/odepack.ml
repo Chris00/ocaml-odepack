@@ -126,7 +126,8 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   let lrn = 20 + 16 * neq in
   let rwork = Array1.create float64 fortran_layout (max lrs lrn) in
   (* Create bigarrays, proxy for rwork, that will encapsulate the
-     array of devivatives or the jacobian for OCaml. *)
+     array of devivatives or the jacobian for OCaml.  The part of
+     [rwork] they will point too will be changed by the C code. *)
   let ydot = Array1.sub rwork 1 neq in
   let pd = genarray_of_array1 (Array1.sub rwork 1 (dim1_jac * neq)) in
   let pd = reshape_2 pd dim1_jac neq in
@@ -149,7 +150,7 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
 
   let rec advance t =
     xsetf (if debug then 1 else 0); (* FIXME: ~ costs more than desired? *)
-    let state = lsoda_ f y0 t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
+    let state = lsoda_ f ode.y t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
       ~rwork ~iwork ~jac ~jt ~ydot ~pd in
     if state = -3 then
       invalid_arg "Odepack.advance (see message written on stdout)";

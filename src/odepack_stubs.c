@@ -50,6 +50,9 @@ typedef void (*JACOBIAN)(integer*, doublereal*, vec,
   integer dim_##V = *big_##V->dim; \
   int *V##_data = ((int *) big_##V->data) /*+ (Long_val(vOFS##V) - 1)*/
 
+#define INT_VEC_DATA(V) \
+  ((int *) Caml_ba_array_val(v##V)->data)
+
 /*
  * Declaring Fortran functions
  **********************************************************************/
@@ -165,10 +168,10 @@ static void eval_vec_field(integer* NEQ, doublereal* T, vec Y, vec YDOT)
   CAMLlocal1(vT);
   value *vNEQ = (value *) NEQ;
   value *closure_f = (value *) vNEQ[1];
-  value vYDOT = vNEQ[2];
-  value vY = vNEQ[5]; /* data location is always the same */
-
-  Caml_ba_array_val(vYDOT)->data = YDOT; /* update RWORK location */
+  value vYDOT = *((value*) vNEQ[2]);
+  value vY = *((value*) vNEQ[4]); /* data location is always the same */
+  
+  (Caml_ba_array_val(vYDOT))->data = YDOT; /* update RWORK location */
   vT = caml_copy_double(*T);
   caml_callback3(*closure_f, vT, vY, vYDOT);
   CAMLreturn0;
@@ -181,12 +184,16 @@ static void eval_jac(integer* NEQ, doublereal* T, vec Y,
   CAMLlocal1(vT);
   value *vNEQ = (value *) NEQ;
   value *closure_jac = (value *) vNEQ[3];
-  value vPD = vNEQ[7];
-  
+  value vPD = *((value *) vNEQ[6]);
+  value args[4];
+
   vT = caml_copy_double(*T);
-  vNEQ[4] = vT;
+  args[0] = vT;
+  args[1] = *((value *) vNEQ[4]);
+  args[2] = vNEQ[5];
+  args[3] = vPD;
   Caml_ba_array_val(vPD)->data = PD; /* update location */
-  caml_callbackN(*closure_jac, 4, &(vNEQ[4])); /* vT, vY, vd, vPD */
+  caml_callbackN(*closure_jac, 4, args); /* vT, vY, vd, vPD */
   CAMLreturn0;
 }
 
@@ -196,7 +203,7 @@ value ocaml_odepack_set_iwork(value vIWORK, value vML, value vMU,
                               value vIXPR, value vMXSTEP)
 {
   /* noalloc */
-  INT_VEC_PARAMS(IWORK);
+  int *IWORK_data = INT_VEC_DATA(IWORK);
   IWORK_data[0] = Int_val(vML);
   IWORK_data[1] = Int_val(vMU);
   IWORK_data[4] = (Bool_val(vIXPR))? 1 : 0;
@@ -219,7 +226,7 @@ value FUN(lsoda)(value vf, value vY, value vT, value vTOUT,
   value *closure_f = &vf;
   value *closure_jac = &vJAC;
   VEC_PARAMS(Y);
-  value NEQ[8]; /* a "value" is large enough to contain any integer */
+  value NEQ[7]; /* a "value" is large enough to contain any integer */
   doublereal T = Double_val(vT), TOUT = Double_val(vTOUT);
   integer ITOL = Int_val(vITOL);
   integer ITASK = Int_val(vITASK) + 1;
@@ -228,17 +235,18 @@ value FUN(lsoda)(value vf, value vY, value vT, value vTOUT,
   VEC_PARAMS(RWORK);
   INT_VEC_PARAMS(IWORK);
   integer JT = Int_val(vJT);
-
-  /* Organized so one can pass this array to the callback */
+  
+  /* Organized so one can pass this array to the callback.  One needs
+     to pass bigarrays by reference to avoid segfaults (because, I
+     guess, the GC can change their address). */
   ((int *) NEQ)[0] = dim_Y;
   NEQ[1] = (value) closure_f; /* "value" can hold any pointer */
-  NEQ[2] = vYDOT;
+  NEQ[2] = (value) &vYDOT;
   NEQ[3] = (value) closure_jac;
-  /* NEQ[4] reserved for vT */
-  NEQ[5] = vY;
-  NEQ[6] = Val_int(IWORK_data[1]+1); /* MU+1, row corresponding to diagonal */
-  NEQ[7] = vPD;
-
+  NEQ[4] = (value) &vY;
+  NEQ[5] = Val_int(IWORK_data[1]+1); /* MU+1, row corresponding to diagonal */
+  NEQ[6] = (value) &vPD;
+  
   CALL(lsoda)(&eval_vec_field, (integer *) NEQ, Y_data, &T, &TOUT,
               &ITOL, VEC_DATA(RTOL), VEC_DATA(ATOL), &ITASK, &ISTATE, &IOPT,
               RWORK_data, &dim_RWORK,  IWORK_data, &dim_IWORK,

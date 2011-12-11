@@ -25,5 +25,5 @@ let () =
     err := max !err (max (abs_float dy1) (abs_float dy2));
   done;
   close_out fh;
-  printf "Max abs error = %g\n" !err;
+  printf "Computed max abs error = %g\n" !err;
   printf "Wrote %S.\n" fname

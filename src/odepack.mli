@@ -19,7 +19,6 @@
     initial value problem for ordinary differential equation systems.
 
     @author Christophe Troestler (Christophe.Troestler\@umons.ac.be)
-    @version 0.3
 *)
 
 open Bigarray

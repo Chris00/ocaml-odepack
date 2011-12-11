@@ -1,21 +1,47 @@
-ROOT = .
-include Makefile.conf
+WEB = odepack.forge.ocamlcore.org:/home/groups/odepack/htdocs/
 
-.PHONY: all byte native install uninstall reinstall doc upload-doc tests clean
-all byte native install uninstall reinstall doc upload-doc:
-	$(MAKE) -C src $@
-tests: all
-	$(MAKE) -C tests all
+DIR = $(shell oasis query name)-$(shell oasis query version)
+TARBALL = $(DIR).tar.gz
 
-clean:
-	$(MAKE) -C src $@
-	$(MAKE) -C tests $@
-	$(MAKE) -C doc $@
+DISTFILES = AUTHORS.txt INSTALL.txt README.txt \
+  Makefile myocamlbuild.ml _oasis setup.ml _tags API.odocl src/META \
+  $(wildcard $(addprefix src/,*.ab *.ml *.mli *.clib *.mllib *.c *.h)) \
+  $(wildward src/fortran/*.f)
+
+.PHONY: configure all byte native doc upload-doc install uninstall reinstall
+all byte native: setup.data
+	ocaml setup.ml -build
+
+configure: setup.data
+setup.data: setup.ml
+	ocaml setup.ml -configure
+
+setup.ml: _oasis
+	oasis.dev setup
+
+doc install uninstall reinstall: all
+	ocaml setup.ml -$@
+
+upload-doc: doc
+	scp -C -p -r _build/API.docdir $(WEB)
 
 .PHONY: dist tar
-dist tar:
-	bzr export /tmp/$(TARBALL) -r "tag:$(VERSION)"
-	@echo "Created tarball '/tmp/$(TARBALL)'."
+dist tar: setup.ml
+	mkdir -p $(DIR)
+	for f in $(DISTFILES); do \
+	  cp -r --parents $$f $(DIR); \
+	done
+	tar -zcvf $(TARBALL) $(DIR)
+	$(RM) -r $(DIR)
+
+.PHONY: clean distclean
+clean: setup.ml
+	ocaml setup.ml -clean
+	$(RM) $(TARBALL) iterate.dat
+
+distclean: setup.ml
+	ocaml setup.ml -distclean
+	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl) setup.log
 
 odepack:
 	@echo "Download odepack from http://netlib.sandia.gov/odepack/"

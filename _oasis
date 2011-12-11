@@ -1,0 +1,65 @@
+#                                                               -*-conf-*-
+OASISFormat: 0.2
+Name:        odepack
+Version:     0.4
+Synopsis:    Binding to ODEPACK.
+Description: This is a collection of solvers for the initial value problem for ordinary differential equation systems.
+Authors:     Christophe Troestler
+License:     LGPL-3.0
+Plugins:     META (0.2), StdFiles (0.2)
+Homepage:    http://forge.ocamlcore.org/projects/odepack/
+
+Library "odepack"
+  Path:	      src
+  BuildTools: ocamlbuild
+  Modules:    Odepack
+  CSources:   odepack_stubs.c
+  # opkda1.f opkda2.f opkdmain.f added via myocamlbuild.ml
+  BuildDepends: bigarray
+
+Document API
+  Title:           API reference for Odepack
+  Type:            OCamlbuild (0.2)
+  InstallDir:      $docdir/api
+  BuildTools:      ocamldoc, ocamlbuild
+  XOCamlbuildPath: .
+  XOCamlbuildLibraries: odepack
+
+
+Executable lsoda
+  Path:           tests/
+  MainIs:         lsoda.ml
+  BuildDepends:   odepack
+  BuildTools:     ocamlbuild
+  Install:        false
+  CompiledObject: best
+
+Executable minimal
+  Path:           tests/
+  MainIs:         minimal.ml
+  BuildDepends:   odepack
+  BuildTools:     ocamlbuild
+  Install:        false
+  CompiledObject: best
+
+Executable pendulum
+  Path:           tests/
+  MainIs:         pendulum.ml
+  BuildDepends:   odepack
+  BuildTools:     ocamlbuild
+  Install:        false
+  CompiledObject: best
+
+Executable closure
+  Path:           tests/
+  MainIs:         closure.ml
+  BuildDepends:   odepack
+  BuildTools:     ocamlbuild
+  Install:        false
+  CompiledObject: best
+
+
+SourceRepository trunk
+  Type:       svn
+  Location:   svn://scm.ocamlcore.org/svn/odepack/trunk
+  Browser:    https://forge.ocamlcore.org/scm/browser.php?group_id=191

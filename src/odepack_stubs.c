@@ -166,14 +166,14 @@ static void eval_vec_field(integer* NEQ, doublereal* T, vec Y, vec YDOT)
 {
   CAMLparam0();
   CAMLlocal1(vT);
-  value *vNEQ = (value *) NEQ;
-  value closure_f = vNEQ[1];
-  value vYDOT = *((value*) vNEQ[2]);
-  value vY = *((value*) vNEQ[4]); /* data location is always the same */
+  value **pvNEQ = (value **) NEQ;
+  value *closure_f = pvNEQ[1];
+  value *vY = pvNEQ[2]; /* data location is always the same */
+  value *vYDOT = pvNEQ[3];
   
-  (Caml_ba_array_val(vYDOT))->data = YDOT; /* update RWORK location */
-  vT = caml_copy_double(*T);
-  caml_callback3(closure_f, vT, vY, vYDOT);
+  vT = caml_copy_double(*T); /* allocates! */
+  Caml_ba_array_val(*vYDOT)->data = YDOT; /* update RWORK location */
+  caml_callback3(*closure_f, vT, *vY, *vYDOT);
   CAMLreturn0;
 }
 
@@ -182,18 +182,19 @@ static void eval_jac(integer* NEQ, doublereal* T, vec Y,
 {
   CAMLparam0();
   CAMLlocal1(vT);
-  value *vNEQ = (value *) NEQ;
-  value closure_jac = vNEQ[3];
-  value vPD = *((value *) vNEQ[6]);
+  value **pvNEQ = (value **) NEQ;
+  value *closure_jac = pvNEQ[4];
+  value *vPD = pvNEQ[5];
   value args[4];
 
   vT = caml_copy_double(*T);
+  /* No alloc anymore: can store the dereferenced pointers. */
   args[0] = vT;
-  args[1] = *((value *) vNEQ[4]);
-  args[2] = vNEQ[5];
-  args[3] = vPD;
-  Caml_ba_array_val(vPD)->data = PD; /* update location */
-  caml_callbackN(closure_jac, 4, args); /* vT, vY, vd, vPD */
+  args[1] = *(pvNEQ[2]); /* vY */
+  args[2] = Val_int(*MU + 1); /* vd = MU+1, row corresponding to diagonal */
+  args[3] = *vPD; /* vPD */
+  Caml_ba_array_val(*vPD)->data = PD; /* update location */
+  caml_callbackN(*closure_jac, 4, args);
   CAMLreturn0;
 }
 
@@ -224,7 +225,7 @@ value FUN(lsoda)(value vf, value vY, value vT, value vTOUT,
   CAMLxparam5(vRTOL, vATOL, vITASK, vISTATE, vRWORK);
   CAMLxparam5(vIWORK, vJAC, vJT, vYDOT, vPD);
   VEC_PARAMS(Y);
-  value NEQ[7]; /* a "value" is large enough to contain any integer */
+  value *NEQ[6];
   doublereal T = Double_val(vT), TOUT = Double_val(vTOUT);
   integer ITOL = Int_val(vITOL);
   integer ITASK = Int_val(vITASK) + 1;
@@ -234,16 +235,14 @@ value FUN(lsoda)(value vf, value vY, value vT, value vTOUT,
   INT_VEC_PARAMS(IWORK);
   integer JT = Int_val(vJT);
   
-  /* Organized so one can pass this array to the callback.  One needs
-     to pass bigarrays by reference to avoid segfaults (because, I
-     guess, the GC can change their address). */
-  ((int *) NEQ)[0] = dim_Y;
-  NEQ[1] = vf;
-  NEQ[2] = (value) &vYDOT; /* "value" can hold any pointer */
-  NEQ[3] = vJAC;
-  NEQ[4] = (value) &vY;
-  NEQ[5] = Val_int(IWORK_data[1]+1); /* MU+1, row corresponding to diagonal */
-  NEQ[6] = (value) &vPD;
+  /* One needs to pass the protected values by reference because the
+     GC can change their value (= the location of the data pointed to). */
+  ((integer *) NEQ)[0] = dim_Y;
+  NEQ[1] = &vf;
+  NEQ[2] = &vY;
+  NEQ[3] = &vYDOT;
+  NEQ[4] = &vJAC;
+  NEQ[5] = &vPD;
   
   CALL(lsoda)(&eval_vec_field, (integer *) NEQ, Y_data, &T, &TOUT,
               &ITOL, VEC_DATA(RTOL), VEC_DATA(ATOL), &ITASK, &ISTATE, &IOPT,

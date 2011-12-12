@@ -1,6 +1,7 @@
 WEB = odepack.forge.ocamlcore.org:/home/groups/odepack/htdocs/
 
-DIR = $(shell oasis query name)-$(shell oasis query version)
+NAME = $(shell oasis query name)
+DIR = $(NAME)-$(shell oasis query version)
 TARBALL = $(DIR).tar.gz
 
 DISTFILES = AUTHORS.txt INSTALL.txt README.txt \
@@ -19,8 +20,15 @@ setup.data: setup.ml
 setup.ml: _oasis
 	oasis.dev setup
 
-doc install uninstall reinstall: all
+doc install: all
 	ocaml setup.ml -$@
+uninstall:
+	ocaml setup.ml -$@
+	ocamlfind remove $(NAME)
+reinstall:
+	$(MAKE) uninstall
+	$(MAKE) install
+
 
 upload-doc: doc
 	scp -C -p -r _build/API.docdir $(WEB)

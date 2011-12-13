@@ -7,7 +7,7 @@ TARBALL = $(DIR).tar.gz
 DISTFILES = AUTHORS.txt INSTALL.txt README.txt \
   Makefile myocamlbuild.ml _oasis setup.ml _tags API.odocl src/META \
   $(wildcard $(addprefix src/,*.ab *.ml *.mli *.clib *.mllib *.c *.h)) \
-  $(wildcard src/fortran/*.f)
+  $(wildcard $(addprefix src/fortran/, opkda1.f opkda2.f opkdmain.f))
 
 .PHONY: configure all byte native doc upload-doc install uninstall reinstall
 all byte native: setup.data

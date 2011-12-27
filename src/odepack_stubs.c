@@ -57,7 +57,8 @@ typedef void (*JACOBIAN)(integer*, doublereal*, vec,
  * Declaring Fortran functions
  **********************************************************************/
 
-extern void xsetf_(integer* MFLAG);
+/* The original FORTRAN name was XSETF (changed by script). */
+extern void odepack_xsetf_(integer* MFLAG);
 
 SUBROUTINE(lsode)(VEC_FIELD F,
                   integer *NEQ, /*  Number of first-order ODE's. */
@@ -154,7 +155,7 @@ value ocaml_odepack_xsetf(value vflag)
 {
   /* noalloc */
   integer mflag = Int_val(vflag);
-  xsetf_(&mflag);
+  odepack_xsetf_(&mflag);
   return Val_unit;
 }
 

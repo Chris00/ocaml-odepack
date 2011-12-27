@@ -21,3 +21,4 @@ setup.*
 *.native
 *.bak
 src/fortran/
+*.tar.gz

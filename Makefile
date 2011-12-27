@@ -4,10 +4,12 @@ NAME = $(shell oasis query name)
 DIR = $(NAME)-$(shell oasis query version)
 TARBALL = $(DIR).tar.gz
 
+ODEPACK = opkda1.f opkda2.f opkdmain.f
+
 DISTFILES = AUTHORS.txt INSTALL.txt README.txt \
   Makefile myocamlbuild.ml _oasis setup.ml _tags API.odocl src/META \
   $(wildcard $(addprefix src/,*.ab *.ml *.mli *.clib *.mllib *.c *.h)) \
-  $(wildcard $(addprefix src/fortran/, opkda1.f opkda2.f opkdmain.f)) \
+  $(wildcard $(addprefix src/fortran/, $(ODEPACK))) \
   $(wildcard tests/*.ml)
 
 .PHONY: configure all byte native doc upload-doc install uninstall reinstall
@@ -53,4 +55,7 @@ distclean: setup.ml
 	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl) setup.log
 
 odepack:
-	@echo "Download odepack from http://netlib.sandia.gov/odepack/"
+	@echo "Downloading odepack from http://netlib.sandia.gov/odepack/"
+	mkdir -p src/fortran/
+	$(RM) $(addprefix src/fortran/, $(ODEPACK))
+	wget $(addprefix http://netlib.sandia.gov/odepack/, $(ODEPACK)) --directory-prefix=src/fortran/

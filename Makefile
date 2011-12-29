@@ -14,7 +14,7 @@ DISTFILES = AUTHORS.txt INSTALL.txt README.txt \
   $(wildcard tests/*.ml)
 
 .PHONY: configure all byte native doc upload-doc install uninstall reinstall
-setup.log all byte native: setup.data
+all byte native setup.log: setup.data
 	ocaml setup.ml -build
 
 configure: setup.data

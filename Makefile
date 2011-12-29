@@ -1,3 +1,4 @@
+# Makefile for developers.  Users can use OASIS (see INSTALL.txt).
 WEB = odepack.forge.ocamlcore.org:/home/groups/odepack/htdocs/
 
 NAME = $(shell oasis query name)
@@ -13,7 +14,7 @@ DISTFILES = AUTHORS.txt INSTALL.txt README.txt \
   $(wildcard tests/*.ml)
 
 .PHONY: configure all byte native doc upload-doc install uninstall reinstall
-all byte native: setup.data
+setup.log all byte native: setup.data
 	ocaml setup.ml -build
 
 configure: setup.data
@@ -23,15 +24,8 @@ setup.data: setup.ml
 setup.ml: _oasis
 	oasis.dev setup
 
-doc install: all
+doc install uninstall reinstall: setup.log
 	ocaml setup.ml -$@
-uninstall:
-	ocaml setup.ml -$@
-	ocamlfind remove $(NAME)
-reinstall:
-	$(MAKE) uninstall
-	$(MAKE) install
-
 
 upload-doc: doc
 	scp -C -p -r _build/API.docdir $(WEB)
@@ -52,7 +46,7 @@ clean: setup.ml
 
 distclean: setup.ml
 	ocaml setup.ml -distclean
-	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl) setup.log
+	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl)
 
 odepack:
 	@echo "Downloading odepack from http://netlib.sandia.gov/odepack/"

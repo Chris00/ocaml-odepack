@@ -9,6 +9,7 @@ ODEPACK = opkda1.f opkda2.f opkdmain.f
 
 DISTFILES = AUTHORS.txt INSTALL.txt README.txt \
   Makefile myocamlbuild.ml _oasis setup.ml _tags API.odocl src/META \
+  rename_c_prims.ml \
   $(wildcard $(addprefix src/,*.ab *.ml *.mli *.clib *.mllib *.c *.h)) \
   $(wildcard $(addprefix src/fortran/, $(ODEPACK))) \
   $(wildcard tests/*.ml)

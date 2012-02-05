@@ -492,6 +492,7 @@ let () =
                   );
              if fortran_lib <> "" then (
                let flib = (S[A"-cclib"; A("-l" ^ fortran_lib)]) in
+               flag ["ocamlmklib"]  flib;
                flag ["extension:cma"]  flib;
                flag ["extension:cmxa"] flib;
              );

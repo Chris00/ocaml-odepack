@@ -23,7 +23,7 @@ setup.data: setup.ml
 	ocaml setup.ml -configure
 
 setup.ml: _oasis
-	oasis.dev setup
+	oasis setup -setup-update dynamic
 
 doc install uninstall reinstall: setup.log
 	ocaml setup.ml -$@
@@ -37,6 +37,8 @@ dist tar: setup.ml
 	for f in $(DISTFILES); do \
 	  cp -r --parents $$f $(DIR); \
 	done
+# Make a setup.ml independent of oasis:
+	cd $(DIR) && oasis setup
 	tar -zcvf $(TARBALL) $(DIR)
 	$(RM) -r $(DIR)
 

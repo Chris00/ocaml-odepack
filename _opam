@@ -1,0 +1,5 @@
+depexts: [
+  [ [ "debian"  ] [ "gfortran" ] ]
+  [ [ "freebsd" ] [ "lang/f77" ] ]
+  [ [ "openbsd" ] [ "lang/f77" ] ]
+]

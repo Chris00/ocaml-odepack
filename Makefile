@@ -6,7 +6,7 @@ DIR = $(NAME)-$(shell oasis query version)
 TARBALL = $(DIR).tar.gz
 
 DISTFILES = AUTHORS.txt INSTALL.txt README.txt \
-  Makefile myocamlbuild.ml _oasis setup.ml _tags API.odocl src/META \
+  Makefile myocamlbuild.ml _oasis _opam setup.ml _tags API.odocl src/META \
   rename_c_prims.ml \
   $(wildcard $(addprefix src/,*.ab *.ml *.mli *.clib *.mllib *.c *.h)) \
   $(wildcard $(addprefix src/fortran/, $(ODEPACK))) \

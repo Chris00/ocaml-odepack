@@ -41,5 +41,39 @@ let fortran_lib() =
 
 let _ = BaseEnv.var_define "fortran_library" fortran_lib
 
+(* Download ODEPACK FORTRAN code. *)
+let odepack_url = "http://netlib.sandia.gov/odepack/"
+let odepack_files = ["opkda1.f"; "opkda2.f"; "opkdmain.f"]
+let odepack_dir = "src/fortran"
+
+let download_fortran_odepack() =
+  (try OASISFileUtil.mkdir ~ctxt:!OASISContext.default "src/fortran"
+   with _ -> ());
+  let d = Sys.getcwd() in
+  Sys.chdir odepack_dir;
+  let download =
+    try
+      let curl = BaseCheck.prog "curl" () in
+      fun url -> OASISExec.run ~ctxt:!OASISContext.default
+                            curl ["--insecure"; "--retry"; "2";
+                                  "--retry-delay"; "2"; "--location";
+                                  "--remote-name"; url ]
+    with PropList.Not_set _ ->
+      (* Curl not found, try wget. *)
+      let wget = BaseCheck.prog "wget" () in
+      fun url -> OASISExec.run ~ctxt:!OASISContext.default
+                            wget ["--no-check-certificate"; "-t"; "2";
+                                  url ]
+  in
+  List.iter (fun fn ->
+             if not(Sys.file_exists fn) then
+               download (odepack_url ^ fn)
+            ) odepack_files;
+  Sys.chdir d
+
+(* Only perform the download at configure time. *)
+let _ = BaseEnv.var_define "download_fortran_odepack"
+                           (fun () -> download_fortran_odepack(); "DONE")
+
 
 let () = setup ()

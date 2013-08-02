@@ -5,8 +5,6 @@ NAME = $(shell oasis query name)
 DIR = $(NAME)-$(shell oasis query version)
 TARBALL = $(DIR).tar.gz
 
-ODEPACK = opkda1.f opkda2.f opkdmain.f
-
 DISTFILES = AUTHORS.txt INSTALL.txt README.txt \
   Makefile myocamlbuild.ml _oasis setup.ml _tags API.odocl src/META \
   rename_c_prims.ml \
@@ -50,9 +48,3 @@ clean: setup.ml
 distclean: setup.ml
 	ocaml setup.ml -distclean
 	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl)
-
-odepack:
-	@echo "Downloading odepack from http://netlib.sandia.gov/odepack/"
-	mkdir -p src/fortran/
-	$(RM) $(addprefix src/fortran/, $(ODEPACK))
-	wget $(addprefix http://netlib.sandia.gov/odepack/, $(ODEPACK)) --directory-prefix=src/fortran/

@@ -3,12 +3,14 @@ OASISFormat: 0.3
 Name:        odepack
 Version:     0.6.3
 Synopsis:    Binding to ODEPACK.
-Description: This is a collection of solvers for the initial value problem for ordinary differential equation systems.
+Description: This is a collection of solvers for the initial value problem for
+  ordinary differential equation systems.
 Authors:     Christophe Troestler <Christophe.Troestler@umons.ac.be>
 License:     LGPL-3.0 with OCaml linking exception
 Plugins:     META (0.3), StdFiles (0.3)
 Homepage:    http://forge.ocamlcore.org/projects/odepack/
 PostConfCommand: ocaml rename_c_prims.ml
+OCamlVersion: >= 3.12.1
 
 Library "odepack"
   Path:	      src
@@ -60,7 +62,7 @@ Executable closure
   CompiledObject: best
 
 
-SourceRepository trunk
-  Type:       svn
-  Location:   svn://scm.ocamlcore.org/svn/odepack/trunk
+SourceRepository master
+  Type:       git
+  Location:   https://forge.ocamlcore.org/anonscm/git/odepack/odepack.git
   Browser:    https://forge.ocamlcore.org/scm/browser.php?group_id=191

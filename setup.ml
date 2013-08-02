@@ -26,12 +26,14 @@ let rec is_substring_loop p lenp i s lens =
 let is_substring p s =
   is_substring_loop p (String.length p) 0 s (String.length s)
 
-let fortran_compilers = ["gfortran"; "g95"; "g77"]
+let fortran_compilers = ["gfortran"; "g95"; "g77"; "f77"]
 
 let fortran_lib() =
   try
     let fortran = BaseCheck.prog_best "fortran" fortran_compilers () in
     if is_substring "gfortran" fortran then "gfortran"
+    else if is_substring "g77" fortran then "g2c"
+    else if is_substring "f77" fortran then "f2c"
     else ""
   with _ ->
     printf "Please install one of these fortran compilers: %s.\nIf you use \

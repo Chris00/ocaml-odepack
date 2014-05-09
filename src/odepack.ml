@@ -46,7 +46,7 @@ type t = {
   advance: float -> unit;
 }
 
-let t ode = ode.t
+let time ode = ode.t
 let vec ode = ode.y
 let hu ode = ode.rwork.{11}
 let hcur ode = ode.rwork.{12}

@@ -94,7 +94,7 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
 val vec : t -> vec
 (** [vec ode] returns the current value of the solution vector.  *)
 
-val t : t -> float
+val time : t -> float
 (** [t ode] returns the current time at which the solution vector was
     computed. *)
 

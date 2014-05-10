@@ -9,7 +9,6 @@ Authors:     Christophe Troestler <Christophe.Troestler@umons.ac.be>
 License:     LGPL-3.0 with OCaml linking exception
 Plugins:     META (0.3), StdFiles (0.3)
 Homepage:    http://forge.ocamlcore.org/projects/odepack/
-PostConfCommand: ocaml rename_c_prims.ml
 OCamlVersion: >= 3.12.1
 
 Library "odepack"

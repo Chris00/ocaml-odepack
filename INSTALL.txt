@@ -38,9 +38,12 @@ installation: no additional library is required.
 Non-OCaml dependencies
 ======================
 
+(You are only required to do the following if you use the Git
+development version.)
+
 This is a binding to ODEPACK which must be downloaded from
 http://netlib.sandia.gov/odepack/ and unpacked in src/fortran/.
-If wget is installed on your system, you can just execute
+If curl is installed on your system, you can just execute
 
   make odepack
 

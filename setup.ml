@@ -1,14 +1,36 @@
-(* setup.ml generated for the first time by OASIS v0.2.0 *)
+(* OASIS_START *)
+(* DO NOT EDIT (digest: 9852805d5c19ca1cb6abefde2dcea323) *)
+(******************************************************************************)
+(* OASIS: architecture for building OCaml libraries and applications          *)
+(*                                                                            *)
+(* Copyright (C) 2011-2013, Sylvain Le Gall                                   *)
+(* Copyright (C) 2008-2011, OCamlCore SARL                                    *)
+(*                                                                            *)
+(* This library is free software; you can redistribute it and/or modify it    *)
+(* under the terms of the GNU Lesser General Public License as published by   *)
+(* the Free Software Foundation; either version 2.1 of the License, or (at    *)
+(* your option) any later version, with the OCaml static compilation          *)
+(* exception.                                                                 *)
+(*                                                                            *)
+(* This library is distributed in the hope that it will be useful, but        *)
+(* WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY *)
+(* or FITNESS FOR A PARTICULAR PURPOSE. See the file COPYING for more         *)
+(* details.                                                                   *)
+(*                                                                            *)
+(* You should have received a copy of the GNU Lesser General Public License   *)
+(* along with this library; if not, write to the Free Software Foundation,    *)
+(* Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA              *)
+(******************************************************************************)
 
 let () =
-  try Topdirs.dir_directory (Sys.getenv "OCAML_TOPLEVEL_PATH")
-  with Not_found -> ();;
-
-(* OASIS_START *)
-(* DO NOT EDIT (digest: 7f47a529f70709161149c201ccd90f0b) *)
+  try
+    Topdirs.dir_directory (Sys.getenv "OCAML_TOPLEVEL_PATH")
+  with Not_found -> ()
+;;
 #use "topfind";;
 #require "oasis.dynrun";;
 open OASISDynRun;;
+
 (* OASIS_STOP *)
 
 open Printf
@@ -42,40 +64,5 @@ let fortran_lib() =
     exit 1
 
 let _ = BaseEnv.var_define "fortran_library" fortran_lib
-
-(* Download ODEPACK FORTRAN code. *)
-let odepack_url = "http://netlib.sandia.gov/odepack/"
-let odepack_files = ["opkda1.f"; "opkda2.f"; "opkdmain.f"]
-let odepack_dir = "src/fortran"
-
-let download_fortran_odepack() =
-  (try OASISFileUtil.mkdir ~ctxt:!OASISContext.default "src/fortran"
-   with _ -> ());
-  let d = Sys.getcwd() in
-  Sys.chdir odepack_dir;
-  let download =
-    try
-      let curl = BaseCheck.prog "curl" () in
-      fun url -> OASISExec.run ~ctxt:!OASISContext.default
-                            curl ["--insecure"; "--retry"; "2";
-                                  "--retry-delay"; "2"; "--location";
-                                  "--remote-name"; url ]
-    with PropList.Not_set _ ->
-      (* Curl not found, try wget. *)
-      let wget = BaseCheck.prog "wget" () in
-      fun url -> OASISExec.run ~ctxt:!OASISContext.default
-                            wget ["--no-check-certificate"; "-t"; "2";
-                                  url ]
-  in
-  List.iter (fun fn ->
-             if not(Sys.file_exists fn) then
-               download (odepack_url ^ fn)
-            ) odepack_files;
-  Sys.chdir d
-
-(* Only perform the download at configure time. *)
-let _ = BaseEnv.var_define "download_fortran_odepack"
-                           (fun () -> download_fortran_odepack(); "DONE")
-
 
 let () = setup ()

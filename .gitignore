@@ -2,12 +2,10 @@
 *.cm[ioax]
 *.cmxa
 *.annot
-*.com
-*.exe
-.depend.ocaml
+*.byte
+*.native
 META
-doc/*.html
-doc/*.css
+*.docdir
 tests/pendulum
 # _oasis & ocamlbuild
 _build
@@ -17,8 +15,6 @@ setup.*
 *.mllib
 *.txt
 *.odocl
-*.byte
-*.native
 *.bak
 src/fortran/
 *.tar.gz

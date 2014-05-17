@@ -19,7 +19,7 @@ open Bigarray
 
 type vec = (float, float64_elt, fortran_layout) Array1.t
 type mat = (float, float64_elt, fortran_layout) Array2.t
-type int_vec = (int, int_elt, fortran_layout) Array1.t
+type int_vec = (int32, int32_elt, fortran_layout) Array1.t
 
 (* specialize version to int (for speed) *)
 let max i j = if (i:int) > j then i else j
@@ -113,7 +113,6 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   let itol, rtol, atol =
     tolerances "Odepack.lsoda" neq rtol rtol_vec atol atol_vec in
   (* FIXME: int allocates "long" on the C side, hence too much is alloc?? *)
-  let iwork = Array1.create int fortran_layout (20 + neq) in
   let jt, ml, mu, jac, dim1_jac, lrs = match jac with
     | Auto_full ->
       2, 0, 0, dummy_jac, neq, 22 + (9 + neq) * neq
@@ -135,6 +134,7 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   rwork.{5} <- 0.; (* H0 *)
   rwork.{6} <- 0.; (* HMAX *)
   rwork.{7} <- 0.; (* HMIN *)
+  let iwork = Array1.create int32 fortran_layout (20 + neq) in
   set_iwork iwork ~ml ~mu ~ixpr:debug_switches ~mxstep;
   xsetf (if debug then 1 else 0);
   let y0 =

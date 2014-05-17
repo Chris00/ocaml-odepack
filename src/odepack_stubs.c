@@ -45,13 +45,15 @@ typedef void (*JACOBIAN)(integer*, doublereal*, vec,
 #define VEC_DATA(V) \
   ((double *) Caml_ba_array_val(v##V)->data)
 
+/* FORTRAN INTEGER data declaration without a kind parameter = 4 bytes */
 #define INT_VEC_PARAMS(V) \
   struct caml_ba_array *big_##V = Caml_ba_array_val(v##V); \
   integer dim_##V = *big_##V->dim; \
-  int *V##_data = ((int *) big_##V->data) /*+ (Long_val(vOFS##V) - 1)*/
+  integer *V##_data = ((integer *) big_##V->data) /*+ (Long_val(vOFS##V) - 1)*/
 
 #define INT_VEC_DATA(V) \
   ((int *) Caml_ba_array_val(v##V)->data)
+
 
 /*
  * Declaring Fortran functions
@@ -159,8 +161,8 @@ value ocaml_odepack_xsetf(value vflag)
   return Val_unit;
 }
 
-/* Since NEQ may be an array (with NEQ(1) only used by LSODA), one
- * will use it to) pass to the function evaluating the Caml closure,
+/* Since NEQ may be an array (with only NEQ(1) used by LSODA), one
+ * will use it to: pass to the function evaluating the Caml closure,
  * pass the bigarray Y (to avoid recreating it) and pass a bigarray
  * structure to YDOT (created on the first call),...  */
 static void eval_vec_field(integer* NEQ, doublereal* T, vec Y, vec YDOT)

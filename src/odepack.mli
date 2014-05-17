@@ -17,6 +17,8 @@
 
 (** Binding to ODEPACK.  This is a collection of solvers for the
     initial value problem for ordinary differential equation systems.
+    See http://computation.llnl.gov/casc/odepack/odepack_home.html
+    and http://www.netlib.org/odepack/
 
     @author Christophe Troestler (Christophe.Troestler\@umons.ac.be)
 *)
@@ -57,6 +59,10 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
 (** [lsoda f y0 t0 t] solves the ODE dy/dt = F(t,y) with initial
     condition y([t0]) = [y0].  The execution of [f t y y'] must
     compute the value of the F([t], [y]) and store it in [y'].
+    It uses a dense or banded Jacobian when the problem is stiff, but it
+    automatically selects between nonstiff (Adams) and stiff (BDF)
+    methods.  It uses the nonstiff method initially, and dynamically
+    monitors data in order to decide which method to use.
 
     @param rtol  relative error tolerance parameter.  Default [1e-6].
     @param rtol_vec  relative error tolerance vector.

@@ -25,7 +25,7 @@ type int_vec = (int32, int32_elt, fortran_layout) Array1.t
 let max i j = if (i:int) > j then i else j
 
 type vec_field = float -> vec -> vec -> unit
-(* [f t y y'] where y' must be used for the storage of the fector
+(* [f t y y'] where y' must be used for the storage of the vector
    field at (t,y):  y' <- f(t,y). *)
 
 type jacobian =
@@ -41,10 +41,16 @@ type t = {
   mutable t: float;
   y: vec;
   mutable state: int;
+  mutable tout: float;
+  mutable tout_next: float; (* time to reach after we are at [tout],
+                               possibly stopping for roots.  *)
   rwork: vec;
   iwork: int_vec;
-  advance: float -> unit;
+  jroot: int_vec;
+  advance: float option -> unit;
 }
+
+let dummy_int_vec = Array1.create int32 fortran_layout 0
 
 let time ode = ode.t
 let vec ode = ode.y
@@ -59,11 +65,20 @@ let nje ode = ode.iwork.{13}
 let nqu ode = ode.iwork.{14}
 let nqcur ode = ode.iwork.{15}
 let imxer ode = ode.iwork.{16} (* FIXME: fortran/C layout *)
-let advance ode = ode.advance
+let advance ?time ode = ode.advance time
 
 let sol ode t =
-  ode.advance t;
+  let tout = Some t in
+  while ode.t <> t do ode.advance tout done;
   ode.y
+
+let has_root t = t.state = 3
+let root t i = t.jroot.{i} <> 0l
+
+let roots t =
+  let ng = Array1.dim t.jroot in
+  if t.state <> 3 then Array.make ng false
+  else Array.init ng (fun i -> t.jroot.{i} <> 0l)
 
 (* The vector flield (type [vec_field]) and jacobian (type [float ->
    vec -> int -> mat -> unit]) functions must be registered.  The
@@ -148,15 +163,115 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   if state = -3 then
     invalid_arg "Odepack.lsoda (see message written on stdout)";
 
-  let rec advance t =
-    xsetf (if debug then 1 else 0); (* FIXME: ~ costs more than desired? *)
-    let state = lsoda_ f ode.y t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
-      ~rwork ~iwork ~jac ~jt ~ydot ~pd in
-    if state = -3 then
-      invalid_arg "Odepack.advance (see message written on stdout)";
-    ode.t <- t;
-    ode.state <- state
+  let rec advance = function
+    | None -> ()
+    | Some t ->
+       xsetf (if debug then 1 else 0); (* FIXME: ~ costs more than desired? *)
+       let state = lsoda_ f ode.y t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
+                          ~rwork ~iwork ~jac ~jt ~ydot ~pd in
+       if state = -3 then
+         invalid_arg "Odepack.advance (lsoda): see message written on stdout";
+       ode.t <- t;
+       ode.state <- state
   and ode = { f = f;  t = tout; y = y0;
+              tout = tout;  tout_next = tout; (* not used for lsoda *)
               state = state;  rwork = rwork;  iwork = iwork;
+              jroot = dummy_int_vec;
               advance = advance } in
+  ode
+
+
+external lsodar_ :
+  vec_field -> vec -> float -> float ->
+  itol:int -> rtol:vec -> atol:vec -> task -> state:int ->
+  rwork:vec -> iwork:int_vec ->
+  jac:(float -> vec -> int -> mat -> unit) -> jt:int ->
+  ydot:vec -> pd:mat ->
+  g:vec_field -> gout:vec -> jroot:int_vec
+  -> int * float
+  = "ocaml_odepack_dlsodar_bc" "ocaml_odepack_dlsodar"
+
+let lsodar ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
+           ?(mxstep=500) ?(copy_y0=true) ?(debug=true) ?(debug_switches=false)
+           ~g ~ng  f y0 t0 tout =
+  let neq = Array1.dim y0 in
+  let itol, rtol, atol =
+    tolerances "Odepack.lsodar" neq rtol rtol_vec atol atol_vec in
+  let jt, ml, mu, jac, dim1_jac, lrs = match jac with
+    | Auto_full ->
+       2, 0, 0, dummy_jac, neq, 22 + (9 + neq) * neq
+    | Auto_band(ml, mu) ->
+       5, ml, mu, dummy_jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq
+    | Full jac ->
+       1, 0, 0, (fun t y _ pd -> jac t y pd), neq, 22 + (9 + neq) * neq
+    | Band (ml, mu, jac) ->
+       4, ml, mu, jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq in
+  let lrn = 20 + 16 * neq + 3 * ng in
+  let rwork = Array1.create float64 fortran_layout (max lrs lrn) in
+  (* Create bigarrays, proxy for rwork, that will encapsulate the
+     array of devivatives or the jacobian for OCaml.  The part of
+     [rwork] they will point too will be changed by the C code. *)
+  let ydot = Array1.sub rwork 1 neq in
+  let pd = genarray_of_array1 (Array1.sub rwork 1 (dim1_jac * neq)) in
+  let pd = reshape_2 pd dim1_jac neq in
+  (* Optional inputs. 0 = default value. *)
+  rwork.{5} <- 0.; (* H0 *)
+  rwork.{6} <- 0.; (* HMAX *)
+  rwork.{7} <- 0.; (* HMIN *)
+  let iwork = Array1.create int32 fortran_layout (20 + neq) in
+  set_iwork iwork ~ml ~mu ~ixpr:debug_switches ~mxstep;
+  if ng < 0 then invalid_arg "Odepack.lsodar: ng < 0";
+  let gout = Array1.sub rwork 1 ng in (* correct loc → C code *)
+  let jroot = Array1.create int32 fortran_layout ng in
+  let y0 =
+    if copy_y0 then
+      let y = Array1.create float64 fortran_layout (Array1.dim y0) in
+      Array1.blit y0 y;
+      y
+    else y0 in
+  xsetf (if debug then 1 else 0);
+  let state, t = lsodar_ f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
+                         ~rwork ~iwork ~jac ~jt  ~ydot ~pd ~g ~gout ~jroot in
+  if state = -3 then
+    invalid_arg "Odepack.lsodar (see message written on stdout)";
+
+  let rec ode = { f = f;  t = t;  y = y0;
+                  state = state;  tout = tout;  tout_next = tout;
+                  rwork = rwork;  iwork = iwork;
+                  jroot = jroot;
+                  advance = advance }
+  and call_lsodar t =
+    let state, t = lsodar_ f ode.y t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
+                           ~rwork ~iwork ~jac ~jt ~ydot ~pd ~g ~gout ~jroot in
+    if state = -3 then
+      invalid_arg "Odepack.advance (lsodar): see message written on stdout";
+    if state = 2 && ode.tout <> ode.tout_next then (
+      (* [t = tout] but it is an old final time that was desired.  No
+         need to stop there now. *)
+      ode.tout <- ode.tout_next;
+      let state, t =
+        lsodar_ f ode.y t0 ode.tout ~itol ~rtol ~atol TOUT ~state:2
+                ~rwork ~iwork ~jac ~jt ~ydot ~pd ~g ~gout ~jroot in
+      if state = -3 then
+        invalid_arg "Odepack.advance (lsodar): see message written on stdout";
+      ode.state <- state;
+      ode.t <- t;
+    )
+    else (
+      ode.state <- state;
+      ode.t <- t;
+    )
+  and advance t =
+    xsetf (if debug then 1 else 0); (* FIXME: ~ costs more than desired? *)
+    match t with
+    | None ->
+       if ode.t <> ode.tout then call_lsodar ode.tout
+    | Some t ->
+       ode.tout_next <- t;
+       if ode.t <> ode.tout then call_lsodar ode.tout (* state = 3 *)
+       else (* ode.t = ode.tout, possible root at tout *)
+         if t <> ode.tout then (
+           ode.tout <- t;
+           call_lsodar t;
+         ) in
   ode

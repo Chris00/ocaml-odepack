@@ -28,7 +28,7 @@ let () =
   let ode = ODE.lsoda vec_field cond_init 0. 10. in
   let t2 = (ODE.vec ode).{3} in
   for i = 1 to 100_000 do
-    ignore(ODE.advance ode (float(10 + i)))
+    ignore(ODE.advance ode ~time:(float(10 + i)))
   done;
   let good = abs_float(t2 -. (-0.77743151685)) < 1e-6 in
   printf "%g (%s)\n" t2 (if good then "good" else "bad")

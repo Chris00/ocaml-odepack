@@ -97,6 +97,21 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
     Default: [false].
 *)
 
+val lsodar : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
+  ?jac:jacobian -> ?mxstep:int -> ?copy_y0:bool ->
+  ?debug:bool -> ?debug_switches:bool ->
+  g:(float -> vec -> vec -> unit) -> ng:int ->
+  (float -> vec -> vec -> unit) -> vec -> float -> float -> t
+(** [lsodar f y0 t0 t ~g ~ng] is like [lsoda] but has root searching
+    capabilities.  The algorithm will stop before reacing time [t] if
+    a root of one of the [ng] constraints is found.  You can determine
+    whether the [lsodar] stopped at a root using {!has_root}.  It only
+    finds those roots for which some component of [g], as a function
+    of t, changes sign in the interval of integration.  The function
+    [g] is evaluated like [f], that is: [g t y gout] must write to
+    [gout.{1},..., gout.{ng}] the value of the [ng] constraints.  *)
+
+
 val vec : t -> vec
 (** [vec ode] returns the current value of the solution vector.  *)
 
@@ -104,10 +119,35 @@ val time : t -> float
 (** [t ode] returns the current time at which the solution vector was
     computed. *)
 
-val advance : t -> float -> unit
-(** [advance ode t] modifies [ode] so that an approximation of the
-    value of the solution at times [t] is computed. *)
+val advance : ?time: float -> t -> unit
+(** [advance ode ~time:t] modifies [ode] so that an approximation of
+    the value of the solution at times [t] is computed.  Note that, if
+    the solver has root searching capabilities and a time is provided,
+    the solver may stop before that time if a root is found.  The time
+    is recorded for future calls to [advance ode].  If the solver has
+    no root finding capabilities and no time is provided, this
+    function does nothing. *)
+
+val has_root : t -> bool
+(** [has_root ode] says wheter the solver stopped (i.e. the current
+    state of [ode] is) because a root was found.  If the solver has no
+    root searching capabilities, this returns [false]. *)
+
+val root : t -> int -> bool
+(** [root t i] returns true iff the [i]th constraint in [lsodar] has a
+    root.  It raises [Invalid_argument] if [i] is not between 1 and
+    [ng], the number of constraints (included).  This only makes sense
+    if [has_root t] holds.  *)
+
+val roots : t -> bool array
+(** [roots t] returns an array [r] such that [r.(i)] holds if and only
+    if the [i]th constraint has a root. *)
 
 val sol : t -> float -> vec
 (** [sol ode t] modifies [ode] so that it holds an approximation of
-    the solution at [t] and returns this approximation. *)
+    the solution at [t] and returns this approximation.  Any root that
+    might be found is ignored. *)
+
+
+
+;;

@@ -36,6 +36,14 @@ Executable lsoda
   Install:        false
   CompiledObject: best
 
+Executable lsodar
+  Path:           tests/
+  MainIs:         lsodar.ml
+  BuildDepends:   odepack
+  BuildTools:     ocamlbuild
+  Install:        false
+  CompiledObject: best
+
 Executable minimal
   Path:           tests/
   MainIs:         minimal.ml

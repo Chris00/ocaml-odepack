@@ -80,6 +80,25 @@ let roots t =
   if t.state <> 3 then Array.make ng false
   else Array.init ng (fun i -> t.jroot.{i} <> 0l)
 
+let error =
+  [| ""; ": excess work done on this call. Wrong Jacobian?";
+     "Excess accuracy requested (tolerances too small)";
+     ": see message written on stdout";
+     ": repeated error test failures (check all inputs)";
+     ": repeated convergence failures, perhaps bad Jacobian or tolerances";
+     ": error weight became zero during problem";
+     ": work space insufficient to finish (see messages)" |]
+
+let raise_error_of_state name state =
+  if state < 0 then (
+    if state >= -7 then
+      let msg = name ^ error.(-state) in
+      if state = -3 then invalid_arg msg
+      else failwith msg
+    else
+      failwith(name ^ ": Unknown error")
+  )
+
 (* The vector flield (type [vec_field]) and jacobian (type [float ->
    vec -> int -> mat -> unit]) functions must be registered.  The
    Jacobian must have Fortran layout as it must be presented in a
@@ -160,8 +179,7 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
     else y0 in
   let state = lsoda_ f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
     ~rwork ~iwork ~jac ~jt  ~ydot ~pd in
-  if state = -3 then
-    invalid_arg "Odepack.lsoda (see message written on stdout)";
+  raise_error_of_state "Odepack.lsoda" state;
 
   let rec advance = function
     | None -> ()
@@ -169,8 +187,7 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
        xsetf (if debug then 1 else 0); (* FIXME: ~ costs more than desired? *)
        let state = lsoda_ f ode.y t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
                           ~rwork ~iwork ~jac ~jt ~ydot ~pd in
-       if state = -3 then
-         invalid_arg "Odepack.advance (lsoda): see message written on stdout";
+       raise_error_of_state "Odepack.advance (lsoda)" state;
        ode.t <- t;
        ode.state <- state
   and ode = { f = f;  t = tout; y = y0;
@@ -232,8 +249,7 @@ let lsodar ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   xsetf (if debug then 1 else 0);
   let state, t = lsodar_ f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
                          ~rwork ~iwork ~jac ~jt  ~ydot ~pd ~g ~gout ~jroot in
-  if state = -3 then
-    invalid_arg "Odepack.lsodar (see message written on stdout)";
+  raise_error_of_state "Odepack.lsodar" state;
 
   let rec ode = { f = f;  t = t;  y = y0;
                   state = state;  tout = tout;  tout_next = tout;
@@ -243,8 +259,7 @@ let lsodar ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   and call_lsodar t =
     let state, t = lsodar_ f ode.y t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
                            ~rwork ~iwork ~jac ~jt ~ydot ~pd ~g ~gout ~jroot in
-    if state = -3 then
-      invalid_arg "Odepack.advance (lsodar): see message written on stdout";
+    raise_error_of_state "Odepack.advance (lsodar)" state;
     if state = 2 && ode.tout <> ode.tout_next then (
       (* [t = tout] but it is an old final time that was desired.  No
          need to stop there now. *)
@@ -252,8 +267,7 @@ let lsodar ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
       let state, t =
         lsodar_ f ode.y t0 ode.tout ~itol ~rtol ~atol TOUT ~state:2
                 ~rwork ~iwork ~jac ~jt ~ydot ~pd ~g ~gout ~jroot in
-      if state = -3 then
-        invalid_arg "Odepack.advance (lsodar): see message written on stdout";
+      raise_error_of_state "Odepack.advance (lsodar)" state;
       ode.state <- state;
       ode.t <- t;
     )

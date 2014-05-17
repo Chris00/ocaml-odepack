@@ -1,7 +1,7 @@
 #                                                               -*-conf-*-
 OASISFormat: 0.3
 Name:        odepack
-Version:     0.6.5
+Version:     0.6.6
 Synopsis:    Binding to ODEPACK.
 Description: This is a collection of solvers for the initial value problem for
   ordinary differential equation systems.

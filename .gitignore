@@ -9,7 +9,6 @@ META
 tests/pendulum
 # _oasis & ocamlbuild
 _build
-_tags
 setup.*
 *.clib
 *.mllib

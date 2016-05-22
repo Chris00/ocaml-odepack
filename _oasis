@@ -6,6 +6,7 @@ Synopsis:    Binding to ODEPACK.
 Description: This is a collection of solvers for the initial value problem for
   ordinary differential equation systems.
 Authors:     Christophe Troestler <Christophe.Troestler@umons.ac.be>
+Maintainers: Christophe Troestler <Christophe.Troestler@umons.ac.be>
 License:     LGPL-3.0 with OCaml linking exception
 Plugins:     META (0.3), StdFiles (0.3)
 Homepage:    http://forge.ocamlcore.org/projects/odepack/

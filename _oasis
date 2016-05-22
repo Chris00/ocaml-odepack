@@ -29,6 +29,7 @@ Document API
 
 
 Executable lsoda
+  Build$:	  flag(tests)
   Path:           tests/
   MainIs:         lsoda.ml
   BuildDepends:   odepack
@@ -37,6 +38,7 @@ Executable lsoda
   CompiledObject: best
 
 Executable lsodar
+  Build$:	  flag(tests)
   Path:           tests/
   MainIs:         lsodar.ml
   BuildDepends:   odepack
@@ -45,6 +47,7 @@ Executable lsodar
   CompiledObject: best
 
 Executable minimal
+  Build$:	  flag(tests)
   Path:           tests/
   MainIs:         minimal.ml
   BuildDepends:   odepack
@@ -53,6 +56,7 @@ Executable minimal
   CompiledObject: best
 
 Executable pendulum
+  Build$:	  flag(tests)
   Path:           tests/
   MainIs:         pendulum.ml
   BuildDepends:   odepack
@@ -61,6 +65,7 @@ Executable pendulum
   CompiledObject: best
 
 Executable closure
+  Build$:	  flag(tests)
   Path:           tests/
   MainIs:         closure.ml
   BuildDepends:   odepack

@@ -14,7 +14,7 @@ DISTFILES = INSTALL.txt Makefile myocamlbuild.ml _oasis _opam setup.ml _tags \
   $(wildcard src/fortran/*) $(wildcard tests/*.ml)
 
 .PHONY: configure all byte native doc upload-doc install uninstall reinstall
-all byte native setup.log: setup.data
+all byte native setup.log: setup.data opam/opam
 	ocaml setup.ml -build
 
 configure: setup.data
@@ -49,6 +49,9 @@ odepack:
 	  $(CURL) $(addprefix $(ODEPACK_URL), $$f); \
 	done
 	ocaml rename_c_prims.ml
+
+opam/opam: _oasis
+	oasis2opam --local -y
 
 clean: setup.ml
 	ocaml setup.ml -clean

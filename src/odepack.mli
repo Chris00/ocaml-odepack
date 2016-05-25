@@ -17,11 +17,13 @@
 
 (** Binding to ODEPACK.  This is a collection of solvers for the
     initial value problem for ordinary differential equation systems.
-    See http://computation.llnl.gov/casc/odepack/odepack_home.html
-    and http://www.netlib.org/odepack/
+    See {{:http://computation.llnl.gov/casc/odepack/}the ODEPACK page}
+    and {{:http://www.netlib.org/odepack/}Netlib}.
+
+    An {!example_of_use} of this library is presented at the end.
 
     @author Christophe Troestler (Christophe.Troestler\@umons.ac.be)
-*)
+ *)
 
 open Bigarray
 
@@ -149,5 +151,31 @@ val sol : t -> float -> vec
     might be found is ignored. *)
 
 
+(** {2:example_of_use   Example of use}
 
+    To solve the equation ∂ₜ²u = f(t,u) with initial conditions
+    u(t₀) = u₀ and ∂ₜu(t₀) = u'₀, you must first reduce it to a first
+    order ODE: ∂ₜ(y₁,y₂) = (y₂, f(t,y₁)) with the initial condition
+    y(t₀) = (u₀, u'₀).  Then write an OCaml function to evaluate the
+    right hand side of this ODE:
+    {[
+      let ode t (y: vec) (dy: vec) =
+        dy.{1} <- y.{2};
+        dy.{2} <- f t y.{1}                                 ]}
+    and get an approximate value of the vector y(t) with
+    {[
+      let init = Array1.of_array float64 fortran_layout [|u₀; u'₀|] in
+      Odepack.vec(Odepack.lsoda ode init t₀ t)
+    ]}
+    You must explicitly project the return value of [Odepack.lsoda]
+    with [Odepack.vec] to get the state of the system because there
+    are several other operations that you can perform on this value
+    (see above).  The value of u(t) is the given by the first
+    component of [y], so you can define (an approximation of) u with
+    {[
+      let u ~u0 ~u'0 t =
+        let init = Array1.of_array float64 fortran_layout [|u0; u'0|] in
+        Odepack.vec(Odepack.lsoda ode init t₀ t).{1}
+    ]}
+ *)
 ;;

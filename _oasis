@@ -1,14 +1,14 @@
 #                                                               -*-conf-*-
-OASISFormat: 0.3
+OASISFormat: 0.4
 Name:        odepack
-Version:     0.6.6
+Version:     0.6.7
 Synopsis:    Binding to ODEPACK.
 Description: This is a collection of solvers for the initial value problem for
   ordinary differential equation systems.
 Authors:     Christophe Troestler <Christophe.Troestler@umons.ac.be>
 Maintainers: Christophe Troestler <Christophe.Troestler@umons.ac.be>
 License:     LGPL-3.0 with OCaml linking exception
-Plugins:     META (0.3), StdFiles (0.3)
+Plugins:     META (0.4), StdFiles (0.4)
 Homepage:    http://forge.ocamlcore.org/projects/odepack/
 OCamlVersion: >= 3.12.1
 
@@ -22,7 +22,7 @@ Library "odepack"
 
 Document API
   Title:           API reference for Odepack
-  Type:            OCamlbuild (0.3)
+  Type:            OCamlbuild (0.4)
   InstallDir:      $docdir/api
   BuildTools:      ocamldoc, ocamlbuild
   XOCamlbuildPath: .

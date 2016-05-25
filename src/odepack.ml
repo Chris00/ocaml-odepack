@@ -80,23 +80,26 @@ let roots t =
   if t.state <> 3 then Array.make ng false
   else Array.init ng (fun i -> t.jroot.{i} <> 0l)
 
-let error =
-  [| ""; ": excess work done on this call. Wrong Jacobian?";
-     "Excess accuracy requested (tolerances too small)";
-     ": see message written on stdout";
-     ": repeated error test failures (check all inputs)";
-     ": repeated convergence failures, perhaps bad Jacobian or tolerances";
-     ": error weight became zero during problem";
-     ": work space insufficient to finish (see messages)" |]
+let make_errors name =
+  [| (* Alt for state=1, when the Jacobian is provided. *)
+    Failure(name ^ ": excess work done on this call. Wrong Jacobian?");
+    Failure(name ^ ": excess work done on this call.");
+    Failure(name ^ ": excess accuracy requested (tolerances too small)");
+    Invalid_argument(name ^ ": see message written on stdout");
+    Failure(name ^ ": repeated error test failures (check all inputs)");
+    Failure(name ^ ": repeated convergence failures, perhaps bad Jacobian \
+                    or tolerances");
+    Failure(name ^ ": error weight became zero during problem");
+    Failure(name ^ ": work space insufficient to finish (see messages)");
+    Failure(name ^ ": Unknown error (contact library author)") |]
 
-let raise_error_of_state name state =
+let raise_error_of_state exn ~jac_given state =
   if state < 0 then (
     if state >= -7 then
-      let msg = name ^ error.(-state) in
-      if state = -3 then invalid_arg msg
-      else failwith msg
+      if jac_given && state = -1 then raise exn.(0)
+      else raise exn.(-state)
     else
-      failwith(name ^ ": Unknown error")
+      raise exn.(8)
   )
 
 (* The vector flield (type [vec_field]) and jacobian (type [float ->
@@ -140,6 +143,9 @@ let tolerances name neq rtol rtol_vec atol atol_vec =
 
 let dummy_jac _ _ _ _ = ()
 
+let lsoda_errors = make_errors "Odepack.lsoda"
+let lsoda_advance_errors = make_errors "Odepack.advance (lsoda)"
+
 let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
     ?(mxstep=500) ?(copy_y0=true) ?(debug=true) ?(debug_switches=false)
     f y0 t0 tout =
@@ -147,15 +153,16 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   let itol, rtol, atol =
     tolerances "Odepack.lsoda" neq rtol rtol_vec atol atol_vec in
   (* FIXME: int allocates "long" on the C side, hence too much is alloc?? *)
-  let jt, ml, mu, jac, dim1_jac, lrs = match jac with
+  let jac_given, jt, ml, mu, jac, dim1_jac, lrs = match jac with
     | Auto_full ->
-      2, 0, 0, dummy_jac, neq, 22 + (9 + neq) * neq
+       false, 2, 0, 0, dummy_jac, neq, 22 + (9 + neq) * neq
     | Auto_band(ml, mu) ->
-      5, ml, mu, dummy_jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq
+       false, 5, ml, mu, dummy_jac, ml + mu + 1,
+       22 + 10 * neq + (2 * ml + mu) * neq
     | Full jac ->
-      1, 0, 0, (fun t y _ pd -> jac t y pd), neq, 22 + (9 + neq) * neq
+       true, 1, 0, 0, (fun t y _ pd -> jac t y pd), neq, 22 + (9 + neq) * neq
     | Band (ml, mu, jac) ->
-      4, ml, mu, jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq in
+       true, 4, ml, mu, jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq in
   let lrn = 20 + 16 * neq in
   let rwork = Array1.create float64 fortran_layout (max lrs lrn) in
   (* Create bigarrays, proxy for rwork, that will encapsulate the
@@ -179,7 +186,7 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
     else y0 in
   let state = lsoda_ f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
     ~rwork ~iwork ~jac ~jt  ~ydot ~pd in
-  raise_error_of_state "Odepack.lsoda" state;
+  raise_error_of_state lsoda_errors state ~jac_given;
 
   let rec advance = function
     | None -> ()
@@ -187,7 +194,7 @@ let lsoda ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
        xsetf (if debug then 1 else 0); (* FIXME: ~ costs more than desired? *)
        let state = lsoda_ f ode.y t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
                           ~rwork ~iwork ~jac ~jt ~ydot ~pd in
-       raise_error_of_state "Odepack.advance (lsoda)" state;
+       raise_error_of_state lsoda_advance_errors state ~jac_given;
        ode.t <- t;
        ode.state <- state
   and ode = { f = f;  t = tout; y = y0;
@@ -208,21 +215,26 @@ external lsodar_ :
   -> int * float
   = "ocaml_odepack_dlsodar_bc" "ocaml_odepack_dlsodar"
 
+let lsodar_errors = make_errors "Odepack.lsodar"
+let lsodar_advance_errors = make_errors "Odepack.advance (lsodar)"
+
 let lsodar ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
            ?(mxstep=500) ?(copy_y0=true) ?(debug=true) ?(debug_switches=false)
            ~g ~ng  f y0 t0 tout =
   let neq = Array1.dim y0 in
   let itol, rtol, atol =
     tolerances "Odepack.lsodar" neq rtol rtol_vec atol atol_vec in
-  let jt, ml, mu, jac, dim1_jac, lrs = match jac with
+  let jac_given, jt, ml, mu, jac, dim1_jac, lrs = match jac with
     | Auto_full ->
-       2, 0, 0, dummy_jac, neq, 22 + (9 + neq) * neq
+       false, 2, 0, 0, dummy_jac, neq, 22 + (9 + neq) * neq
     | Auto_band(ml, mu) ->
-       5, ml, mu, dummy_jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq
+       false, 5, ml, mu, dummy_jac, ml + mu + 1,
+       22 + 10 * neq + (2 * ml + mu) * neq
     | Full jac ->
-       1, 0, 0, (fun t y _ pd -> jac t y pd), neq, 22 + (9 + neq) * neq
+       true, 1, 0, 0, (fun t y _ pd -> jac t y pd), neq, 22 + (9 + neq) * neq
     | Band (ml, mu, jac) ->
-       4, ml, mu, jac, ml + mu + 1, 22 + 10 * neq + (2 * ml + mu) * neq in
+       true, 4, ml, mu, jac, ml + mu + 1,
+       22 + 10 * neq + (2 * ml + mu) * neq in
   let lrn = 20 + 16 * neq + 3 * ng in
   let rwork = Array1.create float64 fortran_layout (max lrs lrn) in
   (* Create bigarrays, proxy for rwork, that will encapsulate the
@@ -249,7 +261,7 @@ let lsodar ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   xsetf (if debug then 1 else 0);
   let state, t = lsodar_ f y0 t0 tout ~itol ~rtol ~atol TOUT ~state:1
                          ~rwork ~iwork ~jac ~jt  ~ydot ~pd ~g ~gout ~jroot in
-  raise_error_of_state "Odepack.lsodar" state;
+  raise_error_of_state lsodar_errors state ~jac_given;
 
   let rec ode = { f = f;  t = t;  y = y0;
                   state = state;  tout = tout;  tout_next = tout;
@@ -259,7 +271,7 @@ let lsodar ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
   and call_lsodar t =
     let state, t = lsodar_ f ode.y t0 t ~itol ~rtol ~atol TOUT ~state:ode.state
                            ~rwork ~iwork ~jac ~jt ~ydot ~pd ~g ~gout ~jroot in
-    raise_error_of_state "Odepack.advance (lsodar)" state;
+    raise_error_of_state lsodar_advance_errors state ~jac_given;
     if state = 2 && ode.tout <> ode.tout_next then (
       (* [t = tout] but it is an old final time that was desired.  No
          need to stop there now. *)
@@ -267,7 +279,7 @@ let lsodar ?(rtol=1e-6) ?rtol_vec ?(atol=1e-6) ?atol_vec ?(jac=Auto_full)
       let state, t =
         lsodar_ f ode.y t0 ode.tout ~itol ~rtol ~atol TOUT ~state:2
                 ~rwork ~iwork ~jac ~jt ~ydot ~pd ~g ~gout ~jroot in
-      raise_error_of_state "Odepack.advance (lsodar)" state;
+      raise_error_of_state lsodar_advance_errors state ~jac_given;
       ode.state <- state;
       ode.t <- t;
     )

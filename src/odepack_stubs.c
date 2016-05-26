@@ -174,6 +174,7 @@ static void eval_vec_field(integer* NEQ, doublereal* T, vec Y, vec YDOT)
   value *vY = pvNEQ[2]; /* data location is always the same */
   value *vYDOT = pvNEQ[3];
 
+  /* FIXME: Use PPX [@unboxed] to avoid this allocation. */
   vT = caml_copy_double(*T); /* allocates! */
   Caml_ba_array_val(*vYDOT)->data = YDOT; /* update RWORK location */
   caml_callback3(*closure_f, vT, *vY, *vYDOT);
@@ -190,6 +191,7 @@ static void eval_jac(integer* NEQ, doublereal* T, vec Y,
   value *vPD = pvNEQ[5];
   value args[4];
 
+  /* FIXME: Use PPX [@unboxed] to avoid this allocation. */
   vT = caml_copy_double(*T);
   /* No alloc anymore: can store the dereferenced pointers. */
   args[0] = vT;

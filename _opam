@@ -3,4 +3,6 @@ depexts: [
   [ [ "ubuntu"  ] [ "gfortran" ] ]
   [ [ "freebsd" ] [ "lang/f77" ] ]
   [ [ "openbsd" ] [ "lang/f77" ] ]
+  [ [ "osx" "homebrew" ] [ "gcc" ] ] # provides gfortran
+  [ [ "osx" "macports" ] [ "gcc" ] ]
 ]

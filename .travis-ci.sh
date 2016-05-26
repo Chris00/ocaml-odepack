@@ -1,7 +1,10 @@
 if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     brew update
     brew install ocaml opam
+    brew install gcc --enable-fortran
 fi
+
+make odepack  # Download the ODEPACK FORTRAN code
 
 OPAM_PKGS="oasis base-bytes"
 

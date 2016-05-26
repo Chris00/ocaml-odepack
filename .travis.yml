@@ -8,6 +8,7 @@ addons:
     - ocaml
     - ocaml-native-compilers
     - opam
+    - gfortran
 
 script: bash -ex .travis-ci.sh
 

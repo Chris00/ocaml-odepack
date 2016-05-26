@@ -4,6 +4,7 @@
 let env = BaseEnvLight.load() (* setup.data *)
 let fortran = BaseEnvLight.var_get "fortran" env
 let fortran_lib = BaseEnvLight.var_get "fortran_library" env
+let fortran_library_path = BaseEnvLight.var_get "fortran_library_path" env
 
 let () =
   dispatch
@@ -29,7 +30,11 @@ let () =
                    Seq[cmd]
                   );
              if fortran_lib <> "" then (
-               let flib = (S[A"-cclib"; A("-l" ^ fortran_lib)]) in
+               let flib = [A"-cclib"; A("-l" ^ fortran_lib)] in
+               let flib =
+                 if fortran_library_path <> "" then
+                   S(A"-ccopt" :: A("-L" ^ fortran_library_path) :: flib)
+                 else S flib in
                flag ["ocamlmklib"]  flib;
                flag ["extension:cma"]  flib;
                flag ["extension:cmxa"] flib;

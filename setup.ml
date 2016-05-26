@@ -63,6 +63,17 @@ let fortran_lib() =
       (String.concat ", " fortran_compilers);
     exit 1
 
+(* On OSX, the OCaml compiler is Clang and must be passed the path of
+   "gfortran". *)
+let fortran_library_path () =
+  try
+    let p = OASISExec.run_read_one_line ~ctxt:!BaseContext.default
+              "gfortran" ["--print-file-name"; "libgfortran.dylib"] in
+    Filename.dirname p
+  with Failure _ -> ""
+
+let _ = BaseEnv.var_define "fortran_library_path" fortran_library_path
+
 let _ = BaseEnv.var_define "fortran_library" fortran_lib
 
 let () = setup ()

@@ -19,7 +19,7 @@ all byte native setup.log: setup.data opam/opam
 
 configure: setup.data
 setup.data: setup.ml
-	ocaml setup.ml -configure
+	ocaml setup.ml -configure --enable-tests
 
 setup.ml: _oasis
 	oasis setup -setup-update dynamic
@@ -29,6 +29,10 @@ doc install uninstall reinstall: setup.log
 
 upload-doc: doc
 	scp -C -p -r _build/API.docdir $(WEB)
+
+test: native
+	for f in _build/tests/*.native; do \
+	  echo "=== Execute `basename $$f` =========="; ./$$f; done
 
 .PHONY: dist tar
 dist tar: setup.ml
@@ -55,10 +59,10 @@ opam/opam: _oasis
 
 clean: setup.ml
 	ocaml setup.ml -clean
-	$(RM) $(TARBALL) iterate.dat
+	$(RM) $(TARBALL) iterate.dat setup.data
 
 distclean: setup.ml
 	ocaml setup.ml -distclean
 	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl)
 
-.PHONY: odepack clean distclean
+.PHONY: test odepack clean distclean

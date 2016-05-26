@@ -1,0 +1,28 @@
+language: c
+sudo: false
+os:
+  - linux
+  - osx
+addons:
+  apt:
+    sources:
+    - avsm
+    packages:
+    - ocaml
+    - ocaml-native-compilers
+    - opam
+
+script: bash -ex .travis-ci.sh
+env:
+  - OPAM_SWITCH=3.12
+  - OPAM_SWITCH=4.01
+  - OPAM_SWITCH=4.02
+  - OPAM_SWITCH=4.03
+
+cache:
+  directories:
+  - $HOME/.opam
+
+notifications:
+  email:
+    - Christophe.Troestler@umons.ac.be

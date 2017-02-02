@@ -11,7 +11,7 @@ License:     LGPL-3.0 with OCaml linking exception
 Plugins:     META (0.4), StdFiles (0.4)
 Homepage:    https://github.com/Chris00/ocaml-odepack
 BugReports:  https://github.com/Chris00/ocaml-odepack/issues
-Tags:	     ODE
+Tags:	     ODE, scientific-computing
 OCamlVersion: >= 3.12.1
 AlphaFeatures: ocamlbuild_more_args
 

@@ -1,8 +1,9 @@
 depexts: [
   [ [ "debian"  ] [ "gfortran" ] ]
   [ [ "ubuntu"  ] [ "gfortran" ] ]
-  [ [ "opensuse" ] [ "gcc-fortran" ] ]
   [ [ "alpine"  ] [ "gfortran" ] ]
+  [ [ "fedora"  ] [ "gcc-gfortran" ] ]
+  [ [ "opensuse" ] [ "gcc-fortran" ] ]
   [ [ "freebsd" ] [ "lang/f77" ] ]
   [ [ "openbsd" ] [ "lang/f77" ] ]
   [ [ "osx" "homebrew" ] [ "gcc" ] ] # provides gfortran

@@ -1,6 +1,7 @@
 depexts: [
   [ [ "debian"  ] [ "gfortran" ] ]
   [ [ "ubuntu"  ] [ "gfortran" ] ]
+  [ [ "opensuse" ] [ "gcc-fortran" ] ]
   [ [ "alpine"  ] [ "gfortran" ] ]
   [ [ "freebsd" ] [ "lang/f77" ] ]
   [ [ "openbsd" ] [ "lang/f77" ] ]

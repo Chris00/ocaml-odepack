@@ -20,18 +20,48 @@
     See {{:http://computation.llnl.gov/casc/odepack/}the ODEPACK page}
     and {{:http://www.netlib.org/odepack/}Netlib}.
 
-    An {!example_of_use} of this library is presented at the end.
+    You can jump to the interface of the {!lib}.
 
-    @author Christophe Troestler (Christophe.Troestler\@umons.ac.be)
+    {2 Example of use}
+
+    To solve the equation ∂ₜ²u = f(t,u) with initial conditions
+    u(t₀) = u₀ and ∂ₜu(t₀) = u'₀, you must first reduce it to a first
+    order ODE: ∂ₜ(y₁,y₂) = (y₂, f(t,y₁)) with the initial condition
+    y(t₀) = (u₀, u'₀).  Then write an OCaml function to evaluate the
+    right hand side of this ODE:
+    {[
+      let ode t (y: vec) (dy: vec) =
+        dy.{1} <- y.{2};
+        dy.{2} <- f t y.{1}                                 ]}
+    and get an approximate value of the vector y(t) with
+    {[
+      let init = Array1.of_array float64 fortran_layout [|u₀; u'₀|] in
+      Odepack.vec(Odepack.lsoda ode init t₀ t)
+    ]}
+    You must explicitly project the return value of [Odepack.lsoda]
+    with [Odepack.vec] to get the state of the system because there
+    are several other operations that you can perform on this value
+    (see above).  The value of u(t) is the given by the first
+    component of [y], so you can define (an approximation of) u with
+    {[
+      let u ~u0 ~u'0 t =
+        let init = Array1.of_array float64 fortran_layout [|u0; u'0|] in
+        Odepack.vec(Odepack.lsoda ode init t₀ t).{1}
+    ]}
+
+   @version %%VERSION%%
+   @author Christophe Troestler (Christophe.Troestler@umons.ac.be)
  *)
 
 open Bigarray
 
+(** {2:lib Odepack library} *)
+
 type vec = (float, float64_elt, fortran_layout) Array1.t
-(** Representation of vectors (parametrized by their layout). *)
+(** Representation of vectors. *)
 
 type mat = (float, float64_elt, fortran_layout) Array2.t
-(** Representation of matrices (parametrized by their layout). *)
+(** Representation of matrices. *)
 
 type t
 (** A mutable value holding the current state of solving the ODE. *)
@@ -45,13 +75,13 @@ type jacobian =
       (resp. above) the diagonal (excluded). *)
   | Full of (float -> vec -> mat -> unit)
   (** [Full df] means that a function [df] is provided to compute the
-      full Jacobian matrix (∂f_i/∂y_j) of the vector field f(t,y).
-      [df t y jac] must store ∂f_i/∂y_j([t],[y]) into [jac.{i,j}]. *)
+      full Jacobian matrix (∂fᵢ/∂yⱼ) of the vector field f(t,y).
+      [df t y jac] must store ∂fᵢ/∂yⱼ([t],[y]) into [jac.{i,j}]. *)
   | Band of int * int * (float -> vec -> int -> mat -> unit)
   (** [Band(l, u, df)] means that a function [df] is provided to compute
       the banded Jacobian matrix with [l] (resp. [u]) diagonals below
       (resp. above) the main one (not counted).  [df t y d jac] must
-      store ∂f_i/∂y_j([t],[y]) into [jac.{i-j+d, j}].  [d] is the row of
+      store ∂fᵢ/∂yⱼ([t],[y]) into [jac.{i-j+d, j}].  [d] is the row of
       [jac] corresponding to the main diagonal of the Jacobian matrix.  *)
 
 val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
@@ -76,8 +106,8 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
     is equivalent to pass a constant [rtol_vec] (resp. [atol_vec]).
     The solver will control the vector E = (E(i)) of estimated local
     errors in [y], according to an inequality of the form
-    max-norm(E(i)/EWT(i)) <= 1, where [EWT(i) = rtol_vec.{i} *
-    abs_float(y.{i}) +. atol_vec.{i}].
+    max-norm(E(i)/EWT(i)) <= 1, where EWT(i) =
+    [rtol_vec.{i} * abs_float(y.{i}) + atol_vec.{i}].
 
     @param jac is an optional Jabobian matrix.  If the problem is
     expected to be stiff much of the time, you are encouraged to supply
@@ -150,33 +180,4 @@ val sol : t -> float -> vec
 (** [sol ode t] modifies [ode] so that it holds an approximation of
     the solution at [t] and returns this approximation.  Any root that
     might be found is ignored. *)
-
-
-(** {2:example_of_use   Example of use}
-
-    To solve the equation ∂ₜ²u = f(t,u) with initial conditions
-    u(t₀) = u₀ and ∂ₜu(t₀) = u'₀, you must first reduce it to a first
-    order ODE: ∂ₜ(y₁,y₂) = (y₂, f(t,y₁)) with the initial condition
-    y(t₀) = (u₀, u'₀).  Then write an OCaml function to evaluate the
-    right hand side of this ODE:
-    {[
-      let ode t (y: vec) (dy: vec) =
-        dy.{1} <- y.{2};
-        dy.{2} <- f t y.{1}                                 ]}
-    and get an approximate value of the vector y(t) with
-    {[
-      let init = Array1.of_array float64 fortran_layout [|u₀; u'₀|] in
-      Odepack.vec(Odepack.lsoda ode init t₀ t)
-    ]}
-    You must explicitly project the return value of [Odepack.lsoda]
-    with [Odepack.vec] to get the state of the system because there
-    are several other operations that you can perform on this value
-    (see above).  The value of u(t) is the given by the first
-    component of [y], so you can define (an approximation of) u with
-    {[
-      let u ~u0 ~u'0 t =
-        let init = Array1.of_array float64 fortran_layout [|u0; u'0|] in
-        Odepack.vec(Odepack.lsoda ode init t₀ t).{1}
-    ]}
- *)
 ;;

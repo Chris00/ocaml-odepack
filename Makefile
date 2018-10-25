@@ -2,48 +2,23 @@
 ODEPACK_URL = http://netlib.sandia.gov/odepack/
 ODEPACK_FILES = opkda1.f opkda2.f opkdmain.f
 ODEPACK_DIR = src/fortran
-WEB = odepack.forge.ocamlcore.org:/home/groups/odepack/htdocs/
 
 CURL = curl --insecure --retry 2 --retry-delay 2 --location --remote-name
-NAME = $(shell oasis query name)
-DIR = $(NAME)-$(shell oasis query version)
-TARBALL = $(DIR).tar.gz
+PKGVERSION = $(shell git describe --always --dirty)
 
-DISTFILES = INSTALL.txt Makefile myocamlbuild.ml _oasis _opam setup.ml _tags \
-  $(wildcard $(addprefix src/,*.ab *.ml *.mli *.clib *.mllib *.c *.h)) \
-  $(wildcard src/fortran/*) $(wildcard tests/*.ml)
+all:
+	dune build @install
 
-.PHONY: configure all byte native doc upload-doc install uninstall reinstall
-all byte native setup.log: setup.data opam/opam
-	ocaml setup.ml -build
+install uninstall:
+	dune $@
 
-configure: setup.data
-setup.data: setup.ml
-	ocaml setup.ml -configure --enable-tests
+test:
+	dune runtest --force
 
-setup.ml: _oasis
-	oasis setup -setup-update dynamic
-
-doc install uninstall reinstall: setup.log
-	ocaml setup.ml -$@
-
-upload-doc: doc
-	scp -C -p -r _build/API.docdir $(WEB)
-
-test: native
-	for f in _build/tests/*.native; do \
-	  echo "=== Execute `basename $$f` =========="; ./$$f; done
-
-.PHONY: dist tar
-dist tar: setup.ml
-	mkdir -p $(DIR)
-	for f in $(DISTFILES); do \
-	  cp -r --parents $$f $(DIR); \
-	done
-# Make a setup.ml independent of oasis:
-	cd $(DIR) && oasis setup
-	tar -zcvf $(TARBALL) $(DIR)
-	$(RM) -r $(DIR)
+doc: all
+	sed -e 's/%%VERSION%%/$(PKGVERSION)/' src/odepack.mli \
+	  > _build/default/src/odepack.mli
+	dune build @doc
 
 # Get odepack FORTRAN codes
 odepack:
@@ -52,17 +27,10 @@ odepack:
 	for f in $(ODEPACK_FILES); do \
 	  $(CURL) $(addprefix $(ODEPACK_URL), $$f); \
 	done
-	ocaml rename_c_prims.ml
+	ocaml config/rename_c_prims.ml
 
-opam/opam: _oasis
-	oasis2opam --local -y
+clean:
+	dune clean
+	$(RM) iterate.dat
 
-clean: setup.ml
-	ocaml setup.ml -clean
-	$(RM) $(TARBALL) iterate.dat setup.data
-
-distclean: setup.ml
-	ocaml setup.ml -distclean
-	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl)
-
-.PHONY: test odepack clean distclean
+.PHONY: all install uninstall test odepack clean

@@ -5,7 +5,7 @@ open Bigarray
 type vec = Odepack.vec
 let vec a = Array1.of_array float64 fortran_layout a
 
-let f t (y: vec) (y': vec) =
+let f _t (y: vec) (y': vec) =
   y'.{1} <- -0.04 *. y.{1} +. 1e4 *. y.{2} *. y.{3};
   y'.{3} <- 3e7 *. y.{2} *. y.{2};
   y'.{2} <- -. y'.{1} -. y'.{3}

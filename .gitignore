@@ -1,19 +1,7 @@
 #							-*-conf-unix-*-
-*.cm[ioax]
-*.cmxa
-*.annot
-*.byte
-*.native
-META
-*.docdir
-tests/pendulum
-# _oasis & ocamlbuild
+.merlin
+*.install
 _build
-setup.*
-*.clib
-*.mllib
-*.txt
-*.odocl
 *.bak
 src/fortran/
 *.tar.gz

@@ -4,7 +4,7 @@ open Printf
 open Bigarray
 module ODE = Odepack
 
-let vec_field a t (u:ODE.vec) (du:ODE.vec) =
+let vec_field a _t (u:ODE.vec) (du:ODE.vec) =
   du.{1} <- a *. u.{2};
   du.{2} <- u.{1}
 

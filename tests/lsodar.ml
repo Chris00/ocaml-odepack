@@ -4,12 +4,12 @@ open Bigarray
 type vec = Odepack.vec
 let vec a = Array1.of_array float64 fortran_layout a
 
-let f t (y: vec) (dy: vec) =
+let f _t (y: vec) (dy: vec) =
   dy.{1} <- -0.04 *. y.{1} +. 1e4 *. y.{2} *. y.{3};
   dy.{3} <- 3e7 *. y.{2}**2.;
   dy.{2} <- -. dy.{1} -. dy.{3}
 
-let g t (y: vec) (g: vec) =
+let g _t (y: vec) (g: vec) =
   g.{1} <- y.{1} -. 1e-4;
   g.{2} <- y.{3} -. 1e-2
 

@@ -88,7 +88,8 @@ val lsoda : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
 
     @param copy_y0 if [false], the vector [y0] is MODIFIED to contain
     the value of the solution at time [t].  Otherwise [y0] is
-    unchanged.  Default: [true].
+    unchanged (the current solution vector is then obtained by
+    {!Odepack.vec}).  Default: [true].
 
     @param debug allows [lsoda] to print messages.  Default [true].
     The messages contain valuable information, it is not recommended
@@ -104,14 +105,14 @@ val lsodar : ?rtol:float -> ?rtol_vec:vec -> ?atol:float -> ?atol_vec:vec ->
   ?debug:bool -> ?debug_switches:bool ->
   g:(float -> vec -> vec -> unit) -> ng:int ->
   (float -> vec -> vec -> unit) -> vec -> float -> float -> t
-(** [lsodar f y0 t0 t ~g ~ng] is like [lsoda] but has root searching
-    capabilities.  The algorithm will stop before reacing time [t] if
+(** [lsodar f y0 t0 t ~g ~ng] is like {!lsoda} but has root searching
+    capabilities.  The algorithm will stop before reaching time [t] if
     a root of one of the [ng] constraints is found.  You can determine
     whether the [lsodar] stopped at a root using {!has_root}.  It only
     finds those roots for which some component of [g], as a function
     of t, changes sign in the interval of integration.  The function
-    [g] is evaluated like [f], that is: [g t y gout] must write to
-    [gout.{1},..., gout.{ng}] the value of the [ng] constraints.  *)
+    [g] is evaluated like [f], that is: [g t y gout] must write to
+    [gout.{1},..., gout.{ng}] the values of the [ng] constraints.  *)
 
 
 val vec : t -> vec

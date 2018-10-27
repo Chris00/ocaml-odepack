@@ -1,5 +1,5 @@
 language: c
-sudo: false
+sudo: required
 addons:
   apt:
     sources:
@@ -9,25 +9,33 @@ addons:
     - ocaml-native-compilers
     - opam
     - gfortran
+  homebrew:
+    packages:
+    - ocaml
+    - opam
+    update: true
 
-script: bash -ex .travis-ci.sh
-
-matrix:
-  include:
-  - os: linux
-    env: OPAM_SWITCH=3.12.1
-  - os: linux
-    env: OPAM_SWITCH=4.01.0
-  - os: linux
-    env: OPAM_SWITCH=4.02.3
-  - os: linux
-    env: OPAM_SWITCH=4.03.0
-  - os: osx
-    osx_image: xcode7.3
-
-cache:
-  directories:
-  - $HOME/.opam
+install:
+  - make odepack  # Download the ODEPACK FORTRAN code  
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+      brew install gcc --enable-fortran || true;
+      brew link --overwrite gcc;
+    fi
+  - wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-opam.sh
+script: bash -ex .travis-opam.sh
+env:
+  global:
+    - FORK_USER=Chris00
+  matrix:
+    - OCAML_VERSION=4.02
+    - OCAML_VERSION=4.03
+    - OCAML_VERSION=4.04
+    - OCAML_VERSION=4.05
+    - OCAML_VERSION=4.06
+    - OCAML_VERSION=4.07
+os:
+  - linux
+  - osx
 
 notifications:
   email:

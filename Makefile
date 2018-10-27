@@ -27,7 +27,8 @@ odepack:
 	for f in $(ODEPACK_FILES); do \
 	  $(CURL) $(addprefix $(ODEPACK_URL), $$f); \
 	done
-	dune exec config/rename_c_prims.exe
+	if [ -z "$$CI" ]; then dune exec config/rename_c_prims.exe; \
+	else ocaml str.cma config/rename_c_prims.ml; fi
 
 clean:
 	dune clean

@@ -54,10 +54,9 @@ let substitute1 sub file =
              Otherwise insert a continuation after the last space. *)
           if String.length l > 72 then (
             let i = String.rindex_from l 71 ' ' in
-            let lb = Bytes.unsafe_of_string l in
-            output fh1 lb 0 i;
+            output_string fh1 (String.sub l 0 i);
             output_string fh1 "\n     & ";
-            output fh1 lb i (String.length l - i)
+            output_string fh1 (String.sub l i (String.length l - i))
           )
           else
             output_string fh1 l;

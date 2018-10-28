@@ -3,5 +3,5 @@
 *.install
 _build
 *.bak
-src/fortran/
+src/fortran/*.f
 *.tar.gz

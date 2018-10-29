@@ -15,3 +15,9 @@ The easier way of installing this library is to use
 [opam](http://opam.ocaml.org/):
 
     opam install odepack
+
+Documentation
+-------------
+
+Please consult the [interface](src/odepack.mli) or the
+[HTML version](http://chris00.github.io/ocaml-odepack/doc/odepack/Odepack/).

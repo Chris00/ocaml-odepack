@@ -149,7 +149,7 @@ let conf c =
   fortran, cflags, clibs
 
 let () =
-  let c = C.create "lbfgs" in
+  let c = C.create "odepack" in
   let fortran, cflags, clibs = conf c in
   C.Flags.write_lines "fortranc.txt" [fortran];
   C.Flags.write_sexp "c_flags.sexp" cflags;

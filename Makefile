@@ -1,4 +1,4 @@
-# Makefile for developers.  Users can use OASIS (see INSTALL.txt).
+# Makefile for developers.  Users can use Dune.
 ODEPACK_URL = http://netlib.sandia.gov/odepack/
 ODEPACK_FILES = opkda1.f opkda2.f opkdmain.f
 ODEPACK_DIR = src/fortran

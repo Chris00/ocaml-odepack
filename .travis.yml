@@ -16,7 +16,6 @@ addons:
     update: true
 
 install:
-  - make odepack  # Download the ODEPACK FORTRAN code  
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then
       brew install gcc --enable-fortran || true;
       brew link --overwrite gcc;

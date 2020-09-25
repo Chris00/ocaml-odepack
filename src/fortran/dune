@@ -16,7 +16,7 @@
 (rule
  (targets opkda1.o opkda2.o opkdmain.o)
  (deps    opkda1.f opkda2.f opkdmain.f)
- (action  (run %{read-lines:fortranc.txt} -c -fPIC -O3 %{deps})))
+ (action  (run %{read-lines:fortranc.txt} -c -std=legacy -fPIC -O3 %{deps})))
 
 (rule
  (targets c_flags.sexp c_library_flags.sexp fortranc.txt)

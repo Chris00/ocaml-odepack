@@ -138,6 +138,9 @@ let fortran c =
 let conf c =
   let fortran = fortran c in
   let is_gfortran = String.is_substring ~sub:"gfortran" fortran in
+  (* Separate arguments by \n for %{read-lines:...} *)
+  let fortran = if is_gfortran then fortran ^ "\n-std=legacy"
+                else fortran in
   let system = C.ocaml_config_var_exn c "system" in
   let clibs = if is_gfortran then
                 let lib = if system = "macosx" then "libgfortran.dylib"

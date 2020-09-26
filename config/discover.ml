@@ -139,12 +139,12 @@ let conf c =
   let fortran = fortran c in
   let is_gfortran = String.is_substring ~sub:"gfortran" fortran in
   let system = C.ocaml_config_var_exn c "system" in
-  let clibs =
-    if system = "macosx" && is_gfortran then
-      let stdout, _ = run "gfortran --print-file-name libgfortran.dylib" in
-      ["-L" ^ Filename.dirname stdout]
-    else [] in
-  let clibs = if is_gfortran then "-lgfortran" :: clibs else clibs in
+  let clibs = if is_gfortran then
+                let lib = if system = "macosx" then "libgfortran.dylib"
+                          else "libgfortran.so" in
+                let stdout, _ = run("gfortran --print-file-name " ^ lib) in
+                ["-L" ^ Filename.dirname stdout; "-lgfortran"]
+              else [] in
   let cflags = [] in
   fortran, cflags, clibs
 
